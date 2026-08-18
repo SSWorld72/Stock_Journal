@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股海手札 (Stock Journal)</title>
+    <script src="https://cdn.tailwindcss.com?v=45"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&v=3');
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            scrollbar-gutter: stable;
+        }
+
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            /* 股價顏色 (台灣習慣: 上漲紅, 下跌綠) */
+            .text-price-up {
+                @apply text-rose-600 font-bold;
+            }
+            .text-price-down {
+                @apply text-emerald-600 font-bold;
+            }
+            /* 損益顏色 (國際/一般習慣: 賺錢綠, 虧錢紅) */
+            .bg-profit {
+                @apply bg-emerald-50 text-emerald-700 px-2 py-1 rounded-md font-bold inline-block;
+            }
+            .bg-loss {
+                @apply bg-rose-50 text-rose-700 px-2 py-1 rounded-md font-bold inline-block;
+            }
+            .text-profit {
+                @apply text-emerald-600 font-bold;
+            }
+            .text-loss {
+                @apply text-rose-600 font-bold;
+            }
+        }
+    </style>
+    <!-- 引入通用錯誤處理器 (攔截未預期異常) -->
+    <script src="utils/js/errorHandler.js"></script>
+</head>
+
+<body class="bg-slate-50 text-slate-800 h-screen flex flex-col antialiased">
+    <header class="bg-white/80 backdrop-blur-md shadow-sm z-20 sticky top-0 border-b border-slate-100">
+        <!-- Top Navigation Tabs with Title -->
+        <nav class="w-full">
+            <div class="max-w-4xl mx-auto flex items-center px-2 sm:px-4">
+                <!-- App Title -->
+                <div class="flex-none mr-2 sm:mr-6">
+                    <h1 class="text-lg sm:text-xl font-bold text-blue-600 tracking-tight">股海手札</h1>
+                </div>
+                <!-- Tabs -->
+                <div class="flex-1 flex gap-1 sm:gap-2 py-1.5">
+                    <button class="tab-btn flex-1 py-2 text-[13px] sm:text-sm font-medium text-blue-700 bg-blue-50 rounded-lg shadow-sm transition-all"
+                    data-target="tab-market">
+                    <div class="flex flex-row items-center justify-center gap-1.5">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                        <span>股市</span>
+                    </div>
+                </button>
+                <button
+                    class="tab-btn flex-1 py-2 text-[13px] sm:text-sm font-medium text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-all"
+                    data-target="tab-trades">
+                    <div class="flex flex-row items-center justify-center gap-1.5">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        <span>交易</span>
+                    </div>
+                </button>
+                <button
+                    class="tab-btn flex-1 py-2 text-[13px] sm:text-sm font-medium text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-all"
+                    data-target="tab-stats">
+                    <div class="flex flex-row items-center justify-center gap-1.5">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                        </svg>
+                        <span>統計</span>
+                    </div>
+                </button>
+                <button
+                    class="tab-btn flex-1 py-2 text-[13px] sm:text-sm font-medium text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-all"
+                    data-target="tab-settings">
+                    <div class="flex flex-row items-center justify-center gap-1.5">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>設定</span>
+                    </div>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content Area (Dynamically injected via app.js) -->
+    <main class="flex-1 max-w-7xl mx-auto w-full p-5 overflow-y-scroll flex flex-col gap-6">
+        <div id="main-container" class="flex-none min-h-full">
+            <!-- Views will be loaded here via JS fetch -->
+            <div class="flex items-center justify-center h-full">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Load Main JS as ES Module -->
+    <script type="module" src="js/app.js?v=45"></script>
+
+    <!-- Add Transaction Modal -->
+    <div id="modal-trade-add" class="fixed inset-0 bg-slate-900/50 hidden flex items-center justify-center z-50">
+        <div
+            class="bg-white rounded-xl shadow-xl w-[600px] max-h-[95vh] overflow-y-auto max-w-full m-4 relative flex flex-col">
+            <div
+                class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white z-10 shrink-0 rounded-t-xl">
+                <h3 id="modal-trade-title" class="text-lg font-bold text-slate-800">新增交易紀錄</h3>
+                <button id="btn-trade-close" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-6 overflow-y-auto grow">
+
+                <!-- Row: Date & Code -->
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- Date -->
+                    <div>
+                        <label class="block text-sm text-slate-500 mb-1.5">日期</label>
+                        <input type="date" id="trade-date"
+                            class="w-full px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors hover:border-slate-300">
+                    </div>
+                    <!-- Code -->
+                    <div id="form-group-code">
+                        <label id="label-trade-code" class="block text-sm text-slate-500 mb-1.5">股票</label>
+                        <div class="flex">
+                            <input type="text" id="trade-code" placeholder="例如 2330"
+                                class="w-full px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-l-lg focus:outline-none focus:border-blue-500 focus:z-10 uppercase transition-colors hover:border-slate-300">
+                            <div id="trade-stock-name"
+                                class="w-24 shrink-0 px-3 py-2.5 text-sm bg-slate-50 border-y border-r border-slate-200 rounded-r-lg text-slate-600 flex items-center justify-center truncate select-none border-l-0">
+                                —</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row: Transaction Type -->
+                <div>
+                    <label class="block text-sm text-slate-500 mb-2">交易</label>
+                    <div class="flex flex-wrap gap-2" id="trade-type-group">
+                        <button type="button"
+                            class="trade-type-btn px-4 py-1.5 rounded-lg border text-sm transition-colors bg-blue-600 text-white border-blue-600 font-medium"
+                            data-value="buy">買進</button>
+                        <button type="button"
+                            class="trade-type-btn px-4 py-1.5 rounded-lg border text-sm transition-colors bg-white text-slate-700 border-slate-200 hover:border-slate-300 font-medium"
+                            data-value="sell">賣出</button>
+                        <button type="button"
+                            class="trade-type-btn px-4 py-1.5 rounded-lg border text-sm transition-colors bg-white text-slate-700 border-slate-200 hover:border-slate-300 font-medium"
+                            data-value="dividend_cash">配息</button>
+                        <button type="button"
+                            class="trade-type-btn px-4 py-1.5 rounded-lg border text-sm transition-colors bg-white text-slate-700 border-slate-200 hover:border-slate-300 font-medium"
+                            data-value="dividend_stock">配股</button>
+                        <button type="button"
+                            class="trade-type-btn px-4 py-1.5 rounded-lg border text-sm transition-colors bg-white text-slate-700 border-slate-200 hover:border-slate-300 font-medium"
+                            data-value="dividend_both">配息+配股</button>
+                        <div class="w-full h-0"></div> <!-- break -->
+                        <button type="button"
+                            class="trade-type-btn px-4 py-1.5 rounded-lg border text-sm transition-colors bg-white text-slate-700 border-slate-200 hover:border-slate-300 font-medium"
+                            data-value="capital_reduction">減資</button>
+                        <button type="button"
+                            class="trade-type-btn px-4 py-1.5 rounded-lg border text-sm transition-colors bg-white text-slate-700 border-slate-200 hover:border-slate-300 font-medium"
+                            data-value="capital_split">分割</button>
+                        <button type="button"
+                            class="trade-type-btn px-4 py-1.5 rounded-lg border text-sm transition-colors bg-white text-slate-700 border-slate-200 hover:border-slate-300 font-medium"
+                            data-value="account_deposit">存入資金</button>
+                        <button type="button"
+                            class="trade-type-btn px-4 py-1.5 rounded-lg border text-sm transition-colors bg-white text-slate-700 border-slate-200 hover:border-slate-300 font-medium"
+                            data-value="account_withdraw">取出資金</button>
+                        <button type="button"
+                            class="trade-type-btn px-4 py-1.5 rounded-lg border text-sm transition-colors bg-white text-slate-700 border-slate-200 hover:border-slate-300 font-medium"
+                            data-value="fee_rebate">手續費折讓</button>
+                    </div>
+                </div>
+
+                <!-- Row: Stock Category & Market Type -->
+                <div class="grid grid-cols-2 gap-6">
+                    <div id="form-group-stock-type">
+                        <label class="block text-sm text-slate-500 mb-2">股票類別</label>
+                        <div class="flex gap-2" id="stock-type-group">
+                            <button type="button"
+                                class="stock-type-btn px-4 py-1.5 rounded-lg border text-sm transition-colors bg-blue-600 text-white border-blue-600 font-medium"
+                                data-value="regular">一般</button>
+                            <button type="button"
+                                class="stock-type-btn px-4 py-1.5 rounded-lg border text-sm transition-colors bg-white text-slate-700 border-slate-200 hover:border-slate-300 font-medium"
+                                data-value="etf">ETF</button>
+                        </div>
+                    </div>
+                    <div id="form-group-market-type">
+                        <label class="block text-sm text-slate-500 mb-2">交易單位</label>
+                        <div class="flex gap-2" id="market-type-group">
+                            <button type="button"
+                                class="market-type-btn px-4 py-1.5 rounded-lg border text-sm transition-colors bg-blue-600 text-white border-blue-600 font-medium"
+                                data-value="regular">整股</button>
+                            <button type="button"
+                                class="market-type-btn px-4 py-1.5 rounded-lg border text-sm transition-colors bg-white text-slate-700 border-slate-200 hover:border-slate-300 font-medium"
+                                data-value="oddLot">零股</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row: Broker & Day trading -->
+                <div id="row-broker-day-trading" class="grid grid-cols-2 gap-6">
+                    <!-- Broker -->
+                    <div id="form-group-broker">
+                        <label class="block text-sm text-slate-500 mb-1.5">券商</label>
+                        <div class="relative">
+                            <select id="trade-broker"
+                                class="w-full px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 appearance-none transition-colors hover:border-slate-300">
+                                <!-- Populated by JS -->
+                            </select>
+                            <div
+                                class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-slate-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row: Day trading -->
+                    <div id="form-group-day-trading" class="hidden">
+                        <!-- 隱形 Label 用來跟左邊的券商 Label 對齊高度 -->
+                        <label class="block text-sm text-transparent mb-1.5 select-none pointer-events-none">當沖</label>
+                        <div class="flex items-center gap-4 py-1.5">
+                            <label class="text-sm text-slate-500">當沖交易</label>
+                            <button type="button" id="trade-day-trading"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-200 transition-colors focus:outline-none shadow-inner cursor-pointer"
+                                data-active="false">
+                                <span id="trade-day-trading-thumb"
+                                    class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform translate-x-0.5 shadow"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Fields Container -->
+                <div id="dynamic-fields-container" class="grid grid-cols-2 gap-x-6 gap-y-6">
+                    <!-- Single versatile fields manipulated by JS -->
+
+                    <!-- Field 1 (e.g., Price, Dividend per share, Reduction Ratio, Amount) -->
+                    <div id="field-group-1">
+                        <label id="label-field-1" class="block text-sm text-slate-500 mb-1.5">成交單價</label>
+                        <input type="number" id="input-field-1" step="0.0001" min="0" placeholder="例如 2290"
+                            class="w-full px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors hover:border-slate-300">
+                    </div>
+
+                    <!-- Field 2 (e.g., Qty, Ex-dividend shares, Original shares) -->
+                    <div id="field-group-2">
+                        <label id="label-field-2" class="block text-sm text-slate-500 mb-1.5">成交股數</label>
+                        <div class="relative flex items-center">
+                            <input type="number" id="input-field-2" step="1" min="0" placeholder="例如 1000"
+                                class="w-full px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors hover:border-slate-300">
+                        </div>
+                    </div>
+
+                    <!-- Field 3 (e.g., New shares) -->
+                    <div id="field-group-3" class="hidden">
+                        <label id="label-field-3" class="block text-sm text-slate-500 mb-1.5">新持股數</label>
+                        <input type="number" id="input-field-3" step="1" min="0" placeholder="留白將自動計算"
+                            class="w-full px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors hover:border-slate-300">
+                    </div>
+
+                    <!-- Field 4 (e.g., Cash return) -->
+                    <div id="field-group-4" class="hidden">
+                        <label id="label-field-4" class="block text-sm text-slate-500 mb-1.5">退還股款</label>
+                        <input type="number" id="input-field-4" step="0.01" min="0" placeholder="—"
+                            class="w-full px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors hover:border-slate-300">
+                    </div>
+
+                    <!-- Field 5 (Stock DPS) -->
+                    <div id="field-group-5" class="hidden">
+                        <label id="label-field-5" class="block text-sm text-slate-500 mb-1.5">每股股利（可略過）</label>
+                        <input type="number" id="input-field-5" step="0.0001" min="0" placeholder="例如 1"
+                            class="w-full px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors hover:border-slate-300">
+                    </div>
+
+                    <!-- Field 6 (Stock Amount) -->
+                    <div id="field-group-6" class="hidden">
+                        <label id="label-field-6" class="block text-sm text-slate-500 mb-1.5">配發股數</label>
+                        <input type="number" id="input-field-6" step="1" min="0" placeholder="留白將自動計算"
+                            class="w-full px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors hover:border-slate-300">
+                    </div>
+                </div>
+
+                <!-- Fee / Tax -->
+                <div id="form-group-fee-tax" class="pt-2">
+                    <label class="block text-sm text-slate-500 mb-1.5 font-medium" id="label-fee-tax">手續費 / 證交稅</label>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div id="container-trade-fee">
+                            <label class="block text-[11px] text-slate-400 mb-1" id="label-trade-fee-top">手續費</label>
+                            <input type="number" id="trade-fee" step="1" min="0" placeholder="自動計算"
+                                class="w-full px-4 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors hover:border-slate-300">
+                            <div id="trade-fee-hint" class="text-[10px] text-slate-400 mt-1">預設 0.1425% (最低$20)</div>
+                        </div>
+                        <div id="container-trade-tax">
+                            <label class="block text-[11px] text-slate-400 mb-1" id="label-trade-tax-top">證交稅</label>
+                            <input type="number" id="trade-tax" step="1" min="0" placeholder="自動計算"
+                                class="w-full px-4 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors hover:border-slate-300">
+                            <div id="trade-tax-hint" class="text-[10px] text-slate-400 mt-1">預設 0.3%</div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Total Amount -->
+                <div id="form-group-total" class="pt-4 pb-2 border-t border-slate-100 hidden">
+                    <div class="flex justify-end mb-1.5 min-h-[16px]">
+                        <span id="trade-total-math"
+                            class="text-[13px] text-slate-600 font-mono bg-slate-50 px-2 py-0.5 rounded border border-slate-200"></span>
+                    </div>
+                    <div class="flex justify-between items-center text-slate-700">
+                        <span class="text-sm font-medium">預估交割總額</span>
+                        <span id="trade-total-amount" class="text-xl font-bold text-blue-600">0</span>
+                    </div>
+                </div>
+
+                <!-- Note -->
+                <div class="grid grid-cols-1">
+                    <label class="block text-sm text-slate-500 mb-1.5">交易備註</label>
+                    <input type="text" id="trade-note" placeholder="選填"
+                        class="w-full px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors hover:border-slate-300">
+                </div>
+
+            </div>
+
+            <!-- Bottom Buttons -->
+            <div class="px-6 py-4 bg-white border-t border-slate-100 shrink-0 rounded-b-xl flex justify-end gap-3 z-10">
+                <button id="btn-trade-add-another"
+                    class="px-5 py-2 text-sm font-medium transition-colors bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg shadow-sm">再記一筆</button>
+                <button id="btn-trade-save"
+                    class="px-5 py-2 text-sm font-medium transition-colors bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">完成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global App Busy Modal is now dynamically injected by uiBlocker.js -->
+
+</body>
+
+</html>

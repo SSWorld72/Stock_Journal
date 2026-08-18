@@ -1,0 +1,692 @@
+<div class="space-y-6 animate-[fadeIn_0.2s_ease-in-out]">
+
+    <!-- Block 1: 資料更新與來源設定 -->
+    <section class="bg-sky-50 p-5 rounded-2xl shadow-sm border border-sky-200">
+        <h3 class="text-md font-semibold mb-4 text-slate-800 flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                </path>
+            </svg>
+            資料更新與來源設定
+        </h3>
+        <div class="grid grid-cols-2 gap-5">
+            <div>
+                <label class="flex items-center text-sm font-medium text-slate-700 mb-1">
+                    資料更新頻率 (股市資料)
+                    <div class="group relative inline-block ml-1 align-middle">
+                        <svg class="w-4 h-4 text-slate-400 hover:text-blue-500 cursor-help transition-colors"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div class="invisible group-hover:visible absolute z-50 w-64 p-2.5 mt-2 -ml-32 text-xs font-normal text-white bg-slate-800 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200"
+                            style="white-space: normal; left: 50%; top: 100%;">
+                            控制當日現價、漲跌等報價欄位的優先抓取頻率。
+                        </div>
+                    </div>
+                </label>
+                <select id="setting-refresh-freq"
+                    class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none transition-colors">
+                    <option value="0">手動更新 (預設)</option>
+                    <option value="300000">5 分鐘</option>
+                    <option value="600000">10 分鐘</option>
+                    <option value="900000">15 分鐘</option>
+                    <option value="1800000">30 分鐘</option>
+                    <option value="3600000">1 小時</option>
+                </select>
+            </div>
+            <div>
+                <label class="flex items-center text-sm font-medium text-slate-700 mb-1">
+                    淨值的自動更新頻率
+                    <div class="group relative inline-block ml-1 align-middle">
+                        <svg class="w-4 h-4 text-slate-400 hover:text-blue-500 cursor-help transition-colors"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div class="invisible group-hover:visible absolute z-50 w-64 p-2.5 mt-2 -ml-32 text-xs font-normal text-white bg-slate-800 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200"
+                            style="white-space: normal; left: 50%; top: 100%;">
+                            控制是否主動去交易所抓取 ETF 淨值，避免頻繁發送請求，減輕伺服器與連線負擔。
+                        </div>
+                    </div>
+                </label>
+                <select id="setting-etf-nav-update-mode"
+                    class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none transition-colors">
+                    <option value="manual">手動更新 (預設)</option>
+                    <option value="5m">5 分鐘</option>
+                    <option value="10m">10 分鐘</option>
+                    <option value="15m">15 分鐘</option>
+                    <option value="30m">30 分鐘</option>
+                    <option value="1h">1 小時</option>
+                </select>
+            </div>
+
+            <div class="col-span-2 flex gap-4">
+                <div class="flex-1">
+                    <label class="flex items-center text-sm font-medium text-slate-700 mb-1">
+                        自動更新起始時間
+                        <div class="group relative inline-block ml-1 align-middle">
+                            <svg class="w-4 h-4 text-slate-400 hover:text-blue-500 cursor-help transition-colors"
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div class="invisible group-hover:visible absolute z-50 w-64 p-2.5 mt-2 text-xs font-normal text-white bg-slate-800 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200"
+                                style="white-space: normal; left: 0; top: 100%;">
+                                非此時段內將暫停自動更新，節省頻寬與效能。
+                            </div>
+                        </div>
+                    </label>
+                    <input type="time" id="setting-update-start" lang="en-GB"
+                        class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none">
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">自動更新結束時間</label>
+                    <input type="time" id="setting-update-end" lang="en-GB"
+                        class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none">
+                </div>
+            </div>
+            <div class="col-span-2">
+                <label class="flex items-center gap-2.5 text-sm font-medium text-slate-700 cursor-pointer group w-fit">
+                    <input type="checkbox" id="setting-trading-hours-only"
+                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4.5 h-4.5 transition-all">
+                    <span class="group-hover:text-blue-600 transition-colors">僅在交易時段自動更新 (過濾假日與 08:30~13:45 以外時間)</span>
+                </label>
+            </div>
+
+            <div class="col-span-2 border-t border-slate-100 pt-4 mt-2">
+                <div class="grid grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">即時報價來源 (主要/備援)</label>
+                        <select id="setting-quote-source"
+                            class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none">
+                            <option value="yahoo">優先使用 Yahoo Finance (推薦：速度較快)</option>
+                            <option value="twse">優先使用 證交所/櫃買中心 API</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">歷史 K 線資料來源</label>
+                        <select id="setting-kline-source"
+                            class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none">
+                            <option value="yahoo">Yahoo Finance (推薦：速度快、高穩定、上市櫃適用)</option>
+                            <option value="official">官方 API</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-span-2 border-t border-slate-100 pt-4 mt-2">
+                <div class="grid grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">API 代理伺服器模式</label>
+                        <select id="setting-api-proxy-mode"
+                            class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none transition-colors">
+                            <option value="gas">Google Apps Script (Serverless 推薦)</option>
+                            <option value="local">本地伺服器 (http://localhost:8080)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="flex items-center text-sm font-medium text-slate-700 mb-1">
+                            API 報價代理 GAS 網址
+                            <div class="group relative inline-block ml-1 align-middle">
+                                <svg class="w-4 h-4 text-slate-400 hover:text-blue-500 cursor-help transition-colors"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <div class="invisible group-hover:visible absolute z-50 w-64 p-2.5 mt-2 -ml-32 text-xs font-normal text-white bg-slate-800 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200"
+                                    style="white-space: normal; left: 50%; top: 100%;">
+                                    填寫您自行部署的 GAS Proxy 網址來抓取股價與籌碼資料。為突破瀏覽器跨域限制，此為 Serverless 模式之必填項目。
+                                </div>
+                            </div>
+                        </label>
+                        <input type="text" id="setting-gas-url"
+                            class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none transition-colors"
+                            placeholder="https://script.google.com/macros/s/.../exec">
+                    </div>
+                </div>
+            </div>
+
+
+
+
+        </div>
+    </section>
+
+    <!-- Block 3: 國家通用稅制設定 -->
+    <section class="bg-violet-50 p-5 rounded-2xl shadow-sm border border-violet-200">
+        <h4 class="text-md font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                </path>
+            </svg>
+            國家通用稅制設定
+            <div class="group relative inline-block ml-1 align-middle">
+                <svg class="w-4 h-4 text-slate-400 hover:text-emerald-500 cursor-help transition-colors" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div class="invisible group-hover:visible absolute z-50 w-64 p-2.5 mt-2 text-xs font-normal text-white bg-slate-800 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200"
+                    style="white-space: normal; right: 0; top: 100%;">
+                    手續費率、證交稅與二代健保為國家統一政策，將全面套用於所有券商與交易之成本計算。
+                </div>
+            </div>
+        </h4>
+        <div class="grid grid-cols-5 gap-4 mb-4">
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">券商手續費率 %</label>
+                <input type="number" id="setting-fee-rate" step="0.0001"
+                    class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2 outline-none"
+                    placeholder="0.1425">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">一般證交稅 %</label>
+                <input type="number" id="setting-tax-rate" step="0.01"
+                    class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2 outline-none"
+                    placeholder="0.3">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">ETF 證交稅 %</label>
+                <input type="number" id="setting-etf-tax-rate" step="0.01"
+                    class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2 outline-none"
+                    placeholder="0.1">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">當沖一般稅 %</label>
+                <input type="number" id="setting-daytrade-tax-rate" step="0.01"
+                    class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2 outline-none"
+                    placeholder="0.15">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">當沖 ETF 稅 %</label>
+                <input type="number" id="setting-daytrade-etf-tax-rate" step="0.01"
+                    class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2 outline-none"
+                    placeholder="0.05">
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50 mt-2">
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">二代健保扣取門檻</label>
+                <input type="number" id="setting-nhi-threshold"
+                    class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2 outline-none"
+                    placeholder="20000">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">二代健保費率 %</label>
+                <input type="number" id="setting-nhi-tax-rate" step="0.01"
+                    class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-2 outline-none"
+                    placeholder="2.11">
+            </div>
+        </div>
+    </section>
+
+    <!-- Block 4: Broker Config -->
+    <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-md font-semibold text-slate-800 flex items-center gap-2">
+                <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
+                    </path>
+                </svg>
+                多券商參數設定
+            </h3>
+            <button id="btn-add-broker"
+                class="text-orange-600 text-sm font-medium hover:text-orange-700 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-orange-200">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                新增券商
+            </button>
+        </div>
+        <div id="brokers-list" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Dynamic brokers will be injected here -->
+        </div>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Block 2: 籌碼面資料庫批次處理 -->
+        <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h3 class="text-md font-semibold text-slate-800 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4">
+                                </path>
+                            </svg>
+                            籌碼面歷史資料庫批次處理
+                            <div class="group relative inline-block ml-1 align-middle">
+                                <svg class="w-4 h-4 text-slate-400 hover:text-indigo-500 cursor-help transition-colors"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <div class="invisible group-hover:visible absolute z-50 w-64 p-2.5 mt-2 -ml-32 text-xs font-normal text-white bg-slate-800 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200"
+                                    style="white-space: normal; left: 50%; top: 100%;">
+                                    系統會在此背景抓取每日三大法人買賣超與融資融券餘額，並將資料快取於本地 IndexedDB 中，以供繪製籌碼圖表使用。
+                                </div>
+                            </div>
+                        </h3>
+                        <span id="chips-last-download-info"
+                            class="text-xs text-slate-400 font-normal ml-1">上次更新時間：無紀錄</span>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-3">
+                    <div class="flex gap-3 items-end">
+                        <div class="flex-1">
+                            <label class="block text-xs font-medium text-slate-600 mb-1">起始日期</label>
+                            <input type="date" id="chips-start-date"
+                                class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 outline-none">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-xs font-medium text-slate-600 mb-1">結束日期</label>
+                            <input type="date" id="chips-end-date"
+                                class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 outline-none">
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-1">
+                        <label class="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer group">
+                            <input type="checkbox" id="chips-force-download"
+                                class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 transition-all">
+                            <span class="group-hover:text-indigo-600 transition-colors">強制重新抓取 (覆蓋既有資料)</span>
+                        </label>
+                        <button id="btn-download-chips"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-all shadow-sm active:scale-95 whitespace-nowrap">
+                            開始批次抓取
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="chips-progress-container"
+                class="mt-3 hidden bg-slate-50 border border-slate-200 p-2.5 rounded-xl flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <svg class="animate-spin w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                    <div class="text-xs font-medium text-slate-700" id="chips-progress-text">抓取中... 0 / 0</div>
+                </div>
+                <div class="text-xs text-slate-500" id="chips-progress-date"></div>
+            </div>
+        </section>
+
+        <!-- Block: 休市日行事曆 -->
+        <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h3 class="text-md font-semibold text-slate-800 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            休市日行事曆
+                        </h3>
+                        <span id="holiday-year-badge" class="text-xs text-slate-400 font-medium">2026 年</span>
+                        <span id="holiday-warning-badge"
+                            class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-medium hidden">建議更新</span>
+                        <span id="holiday-last-updated-text"
+                            class="text-xs text-slate-400 font-normal ml-1">上次更新時間：無紀錄</span>
+                    </div>
+                    <button id="btn-refresh-holidays" type="button"
+                        class="text-xs text-blue-600 hover:text-blue-700 underline cursor-pointer font-medium disabled:opacity-50">
+                        重新載入
+                    </button>
+                </div>
+                <div id="holiday-status-msg" class="text-xs px-2.5 py-1.5 rounded-lg hidden mb-2"></div>
+                <div class="text-xs text-slate-500 leading-relaxed mb-4">
+                    從 TWSE 證交所與人事行政總處取得最新休市日，供 T+2 交割日計算使用。
+                </div>
+            </div>
+            <!-- 更新提醒 -->
+            <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                <span class="text-xs text-slate-500 shrink-0">更新提醒</span>
+                <div class="flex gap-1" id="holiday-reminder-options">
+                    <button type="button" data-val="never"
+                        class="holiday-reminder-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer whitespace-nowrap transition-colors bg-white text-slate-600 border-slate-200 hover:border-blue-400">不提醒</button>
+                    <button type="button" data-val="monthly"
+                        class="holiday-reminder-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer whitespace-nowrap transition-colors bg-white text-slate-600 border-slate-200 hover:border-blue-400">每月</button>
+                    <button type="button" data-val="quarterly"
+                        class="holiday-reminder-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer whitespace-nowrap transition-colors bg-white text-slate-600 border-slate-200 hover:border-blue-400">每季</button>
+                    <button type="button" data-val="yearly"
+                        class="holiday-reminder-btn text-xs px-2.5 py-1 rounded-md border cursor-pointer whitespace-nowrap transition-colors bg-blue-600 text-white border-blue-600">每年</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Block: 全市場 EPS 與營收 YoY 財報資料庫 -->
+        <section
+            class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between lg:col-span-2">
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h3 class="text-md font-semibold text-slate-800 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            全市場 EPS 與營收 YoY 財報資料庫
+                            <div class="group relative inline-block ml-1 align-middle">
+                                <svg class="w-4 h-4 text-slate-400 hover:text-emerald-600 cursor-help transition-colors"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <div class="invisible group-hover:visible absolute z-50 w-72 p-2.5 mt-2 -ml-36 text-xs font-normal text-white bg-slate-800 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200"
+                                    style="white-space: normal; left: 50%; top: 100%;">
+                                    自 TWSE/TPEx OpenAPI 打包下載全市場上市與上櫃公司之最新季報每股盈餘 (EPS) 及每月營收年增率 (YoY)，並儲存於本機 IndexedDB
+                                    快取。
+                                </div>
+                            </div>
+                        </h3>
+                    </div>
+                    <button id="btn-sync-all-financials"
+                        class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all shadow-sm active:scale-95 flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        一鍵更新財報資料
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-3">
+                    <!-- YoY Block -->
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                月營收年增率 (YoY)
+                            </span>
+                            <button id="btn-download-yoy"
+                                class="text-xs text-emerald-600 hover:text-emerald-700 font-medium underline cursor-pointer">立即更新</button>
+                        </div>
+                        <div class="space-y-1 text-xs text-slate-500">
+                            <div class="flex justify-between"><span>最新資料期間：</span><span id="yoy-last-period"
+                                    class="font-medium text-slate-700">--</span></div>
+                            <div class="flex justify-between"><span>下載更新時間：</span><span id="yoy-last-updated"
+                                    class="text-slate-600">無紀錄</span></div>
+                            <div class="flex justify-between"><span>快取檔數：</span><span id="yoy-cache-count"
+                                    class="text-slate-600">0 檔</span></div>
+                        </div>
+                    </div>
+
+                    <!-- EPS Block -->
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                季報每股盈餘 (EPS)
+                            </span>
+                            <button id="btn-download-eps"
+                                class="text-xs text-blue-600 hover:text-blue-700 font-medium underline cursor-pointer">立即更新</button>
+                        </div>
+                        <div class="space-y-1 text-xs text-slate-500">
+                            <div class="flex justify-between"><span>最新資料期間：</span><span id="eps-last-period"
+                                    class="font-medium text-slate-700">--</span></div>
+                            <div class="flex justify-between"><span>下載更新時間：</span><span id="eps-last-updated"
+                                    class="text-slate-600">無紀錄</span></div>
+                            <div class="flex justify-between"><span>快取檔數：</span><span id="eps-cache-count"
+                                    class="text-slate-600">0 檔</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-2">
+                    <label class="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer group">
+                        <input type="checkbox" id="financials-force-download"
+                            class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 transition-all">
+                        <span class="group-hover:text-emerald-600 transition-colors">強制重新抓取 (忽略 24 小時快取，向伺服器發送請求)</span>
+                    </label>
+                    <span id="financials-status-text" class="text-xs text-slate-400 font-normal"></span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Block 5: Storage & Backup -->
+    <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <h3 class="text-md font-semibold mb-4 flex items-center gap-2 text-slate-800">
+            <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            </svg>
+            資料儲存與備份設定
+        </h3>
+
+        <div class="space-y-5">
+
+            <!-- Backup & Restore -->
+            <div class="pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- 左側：全系統 JSONL 備份 (靛藍/紫色系) -->
+                <div class="bg-indigo-50/40 border border-indigo-100/80 p-4 rounded-xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="flex items-center text-sm font-semibold text-indigo-950">
+                                <svg class="w-4 h-4 text-indigo-500 mr-1.5" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                </svg>
+                                全系統資料庫備份 (JSONL)
+                                <div class="group relative inline-block ml-1 align-middle">
+                                    <svg class="w-4 h-4 text-indigo-400 hover:text-indigo-600 cursor-help transition-colors"
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <div class="invisible group-hover:visible absolute z-50 w-64 p-2.5 mt-2 -ml-32 text-xs font-normal text-white bg-slate-800 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200"
+                                        style="white-space: normal; left: 50%; top: 100%;">
+                                        以串流 JSONL 格式備份完整資料庫（包含所有參數設定、券商、休市日行事曆、所有交易紀錄與籌碼歷史資料庫），支援大容量無痛備份與還原。
+                                    </div>
+                                </div>
+                            </label>
+                            <span
+                                class="text-[11px] font-medium bg-indigo-100/80 text-indigo-700 px-2 py-0.5 rounded-full">全量資料</span>
+                        </div>
+                        <p class="text-xs text-indigo-700/70 mb-3 leading-relaxed">
+                            備份所有交易紀錄、券商、休市日行事曆、系統設定 (含連線憑證) 與籌碼資料庫，供跨裝置遷移或災難復原。
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="btn-export-jsonl" onclick="window.settingsTab.exportJSONL()"
+                            class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-white border border-indigo-200 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-50 hover:border-indigo-300 transition-all shadow-xs active:scale-95">
+                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            匯出 JSONL
+                        </button>
+                        <button id="btn-import-jsonl" onclick="document.getElementById('import-jsonl-file').click()"
+                            class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-white border border-indigo-200 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-50 hover:border-indigo-300 transition-all shadow-xs active:scale-95">
+                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            匯入 JSONL
+                        </button>
+                        <input type="file" id="import-jsonl-file" class="hidden" accept=".jsonl,.gz"
+                            onchange="window.settingsTab.importJSONL(event)">
+                    </div>
+                    <!-- JSONL 匯出/匯入進度條容器 -->
+                    <div id="jsonl-box"></div>
+                </div>
+
+                <!-- 右側：CSV 批次處理 (翡翠綠/表格系) -->
+                <div class="bg-emerald-50/40 border border-emerald-100/80 p-4 rounded-xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="flex items-center text-sm font-semibold text-emerald-950">
+                                <svg class="w-4 h-4 text-emerald-500 mr-1.5" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                CSV 批次處理 (交易紀錄)
+                                <div class="group relative inline-block ml-1 align-middle">
+                                    <svg class="w-4 h-4 text-emerald-500 hover:text-emerald-700 cursor-help transition-colors"
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <div class="invisible group-hover:visible absolute z-50 w-64 p-2.5 mt-2 -ml-32 text-xs font-normal text-white bg-slate-800 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200"
+                                        style="white-space: normal; left: 50%; top: 100%;">
+                                        以 CSV 格式匯出所有的交易紀錄、系統設定 (含連線憑證) 與券商參數，您可以在 Excel 中批次修改後，再重新匯入系統中更新資料。
+                                    </div>
+                                </div>
+                            </label>
+                            <span
+                                class="text-[11px] font-medium bg-emerald-100/80 text-emerald-700 px-2 py-0.5 rounded-full">Excel
+                                表格</span>
+                        </div>
+                        <p class="text-xs text-emerald-700/70 mb-3 leading-relaxed">
+                            針對「買賣交易明細」、「系統設定 (含連線憑證)」與「券商參數」進行匯出與匯入，適合在 Excel 中大量編修。
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="window.settingsTab.exportCSV()"
+                            class="flex-1 flex items-center justify-center gap-1 py-2 px-2.5 bg-white border border-emerald-200 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-50 hover:border-emerald-300 transition-all shadow-xs active:scale-95">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            匯出
+                        </button>
+                        <button onclick="document.getElementById('trade-csv-input').click()"
+                            class="flex-1 flex items-center justify-center gap-1 py-2 px-2.5 bg-white border border-emerald-200 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-50 hover:border-emerald-300 transition-all shadow-xs active:scale-95">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            匯入
+                        </button>
+                        <button onclick="window.settingsTab.downloadTemplate()"
+                            class="flex-1 flex items-center justify-center gap-1 py-2 px-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-all shadow-xs active:scale-95"
+                            title="下載範本">
+                            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            範本
+                        </button>
+                        <input type="file" id="trade-csv-input" class="hidden" accept=".csv"
+                            onchange="window.settingsTab.importCSV(event)">
+                    </div>
+            </div>
+
+            <!-- 私有雲端備份 (Private Cloud Backup) -->
+            <div class="pt-4 border-t border-slate-100 mt-4 col-span-1 md:col-span-2">
+                <div id="gas-backup-module"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Block 6: System Logs -->
+    <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-md font-semibold text-slate-800 flex items-center gap-2 whitespace-nowrap">
+                <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                系統日誌 (System Logs)
+            </h3>
+            <div class="flex gap-2 items-center w-full justify-end ml-4">
+                <div class="relative w-64">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input type="text" id="log-time-filter"
+                        class="w-full text-xs pl-8 pr-2 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        placeholder="搜尋時間 (如 11:36) 或關鍵字">
+                </div>
+                <button id="btn-copy-logs"
+                    class="whitespace-nowrap text-slate-500 text-sm hover:text-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 border border-slate-200 shadow-sm bg-white"
+                    title="複製過濾後的日誌">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    複製
+                </button>
+                <button id="btn-export-logs"
+                    class="whitespace-nowrap text-slate-500 text-sm hover:text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 border border-slate-200 shadow-sm bg-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    匯出日誌
+                </button>
+                <button id="btn-clear-logs"
+                    class="text-slate-500 text-sm hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 border border-slate-200 shadow-sm bg-white">
+                    清除
+                </button>
+            </div>
+        </div>
+        <div class="bg-slate-900 rounded-xl p-3 h-48 overflow-y-auto">
+            <pre id="system-logs-container"
+                class="text-xs text-green-400 font-mono whitespace-pre-wrap leading-relaxed break-all"></pre>
+        </div>
+        <p class="text-[10px] text-slate-400 mt-2">顯示最近 999 筆主控台日誌，方便排解連線或資料抓取問題。</p>
+    </section>
+
+
+
+</div>
+
+<!-- Add/Edit Broker Modal -->
+
+<div id="modal-broker" class="fixed inset-0 bg-slate-900/50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl w-[400px] max-w-full m-4">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-slate-800" id="modal-broker-title">新增券商設定</h3>
+            <button id="btn-broker-close" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">券商名稱</label>
+                <input type="text" id="broker-name" placeholder="例如: 元大、國泰"
+                    class="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">公定手續費率 (%)</label>
+                <input type="number" id="broker-fee" step="0.0001" value="0.1425"
+                    class="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500">
+                <p class="text-xs text-slate-400 mt-1">台股預設為 0.1425%</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">手續費折讓 (折)</label>
+                <input type="number" id="broker-discount" step="0.1" value="6.0" placeholder="60% 輸入 6"
+                    class="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500">
+                <p class="text-xs text-slate-400 mt-1">例如 60% 折扣輸入 6.0，無折扣輸入 10</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">證交稅率 (%)</label>
+                <input type="number" id="broker-tax" step="0.01" value="0.3"
+                    class="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500">
+                <p class="text-xs text-slate-400 mt-1">一般股票 0.3%，ETF 0.1%</p>
+            </div>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-xl flex justify-end gap-2">
+            <button id="btn-broker-cancel"
+                class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors">取消</button>
+            <button id="btn-broker-save"
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">儲存</button>
+        </div>
+    </div>
+</div>

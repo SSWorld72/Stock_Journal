@@ -1,0 +1,168 @@
+<div class="flex justify-between items-center mb-4">
+    <div class="flex items-center gap-2">
+        <h2 class="text-lg font-semibold text-slate-800">全部交易紀錄</h2>
+    </div>
+    <div class="flex gap-2">
+        <button id="btn-trade-batch-delete"
+            class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors items-center gap-1 shadow-sm hidden">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span class="hidden sm:inline" id="btn-trade-batch-delete-text">刪除所選 (0)</span>
+        </button>
+
+        <button id="btn-trade-add"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            新增紀錄
+        </button>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 mb-4 flex flex-wrap items-end gap-4">
+    <div>
+        <label class="block text-xs text-slate-500 mb-1">開始日期</label>
+        <input type="date" id="filter-date-start"
+            class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-blue-500 transition-colors">
+    </div>
+    <div>
+        <label class="block text-xs text-slate-500 mb-1">結束日期</label>
+        <input type="date" id="filter-date-end"
+            class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-blue-500 transition-colors">
+    </div>
+    <div>
+        <label class="block text-xs text-slate-500 mb-1">股票代號</label>
+        <input type="text" id="filter-code" placeholder="全部"
+            class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-blue-500 transition-colors w-24">
+    </div>
+    <div>
+        <label class="block text-xs text-slate-500 mb-1">交易類型</label>
+        <select id="filter-type"
+            class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-blue-500 transition-colors">
+            <option value="">全部</option>
+            <option value="trade_buy">買進</option>
+            <option value="trade_sell">賣出</option>
+            <option value="dividend_cash">配息</option>
+            <option value="dividend_stock">配股</option>
+            <option value="dividend_both">配息+配股</option>
+            <option value="capital_change_reduction">減資</option>
+            <option value="capital_change_split">分割</option>
+            <option value="account_deposit">存入</option>
+            <option value="account_withdraw">取出</option>
+            <option value="account_deposit_withdraw">存入+取出</option>
+            <option value="fee_rebate_">折讓</option>
+        </select>
+    </div>
+    <div>
+        <label class="block text-xs text-slate-500 mb-1">股票類別</label>
+        <select id="filter-stock-type"
+            class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-blue-500 transition-colors">
+            <option value="">全部</option>
+            <option value="regular">一般</option>
+            <option value="etf">ETF</option>
+        </select>
+    </div>
+    <div>
+        <label class="block text-xs text-slate-500 mb-1">交易單位</label>
+        <select id="filter-market-type"
+            class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-blue-500 transition-colors">
+            <option value="">全部</option>
+            <option value="regular">整股</option>
+            <option value="oddLot">零股</option>
+        </select>
+    </div>
+    <div>
+        <label class="block text-xs text-slate-500 mb-1">券商</label>
+        <select id="filter-broker"
+            class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-blue-500 transition-colors w-24">
+            <option value="">全部</option>
+            <!-- 預設由 JS 填入選項 -->
+        </select>
+    </div>
+    <div class="flex gap-2 items-center h-[34px]">
+        <button id="btn-trade-filter-reset"
+            class="text-sm text-slate-500 hover:text-slate-700 transition-colors px-2">重設篩選</button>
+    </div>
+</div>
+
+<div id="trade-summary-container"
+    class="bg-white rounded-xl shadow-sm border border-slate-100 mb-4 overflow-hidden hidden">
+    <div class="bg-slate-50 border-b border-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700">
+        持股摘要
+    </div>
+    <div class="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100">
+        <div class="p-4 text-center">
+            <div class="text-xs text-slate-500 mb-1">持股成本</div>
+            <div class="text-xl font-bold text-red-500" id="summary-cost">0</div>
+        </div>
+        <div class="p-4 text-center">
+            <div class="text-xs text-slate-500 mb-1">損益兩平價</div>
+            <div class="text-xl font-bold text-yellow-500" id="summary-breakeven">0.00</div>
+            <div class="text-[10px] text-slate-400 mt-1">含手續費及交易稅</div>
+        </div>
+        <div class="p-4 text-center">
+            <div class="text-xs text-slate-500 mb-1">目前市值</div>
+            <div class="text-xl font-bold text-blue-600" id="summary-market-value">0</div>
+        </div>
+    </div>
+    <div class="px-4 py-3 bg-slate-50/50 flex justify-between items-center text-sm">
+        <div class="text-slate-700"><span class="text-slate-500">持股</span> <span class="font-bold"
+                id="summary-shares">0</span> 股</div>
+        <div class="text-slate-700"><span class="text-slate-500">均價</span> <span class="font-bold"
+                id="summary-avg-price">0.00</span></div>
+        <div class="text-slate-700 font-medium" id="summary-unrealized">未實現 0</div>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-100">
+    <table class="w-full text-left text-sm text-slate-600 whitespace-nowrap">
+        <thead
+            class="text-sm text-slate-700 bg-slate-100/95 backdrop-blur shadow-sm border-b border-slate-200 sticky top-0 z-20">
+            <tr>
+                <th scope="col" class="px-3 py-3 w-10 text-center align-middle">
+                    <input type="checkbox" id="trade-select-all" class="cursor-pointer w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500">
+                </th>
+                <th scope="col" class="px-2 py-3 font-medium w-12 text-center text-slate-400 align-middle">#</th>
+                
+                <th scope="col" class="px-4 py-2 font-medium align-middle w-[20%]">
+                    <div class="cursor-pointer hover:text-slate-800 transition-colors select-none group flex items-center gap-1 mb-1" data-sort="date">
+                        日期 <span class="text-slate-300 group-hover:text-slate-500" id="sort-icon-date">▼</span>
+                    </div>
+                    <div class="cursor-pointer hover:text-slate-800 transition-colors select-none group flex items-center gap-1" data-sort="code">
+                        代號／股票名稱 <span class="text-slate-300 group-hover:text-slate-500" id="sort-icon-code"></span>
+                    </div>
+                </th>
+                
+                <th scope="col" class="px-4 py-2 font-medium align-middle w-[15%]">
+                    <div class="cursor-pointer hover:text-slate-800 transition-colors select-none group flex items-center gap-1 mb-1" data-sort="brokerId">
+                        券商 <span class="text-slate-300 group-hover:text-slate-500" id="sort-icon-brokerId"></span>
+                    </div>
+                    <div class="cursor-pointer hover:text-slate-800 transition-colors select-none group flex items-center gap-1" data-sort="type">
+                        類型 <span class="text-slate-300 group-hover:text-slate-500" id="sort-icon-type"></span>
+                    </div>
+                </th>
+                
+                <th scope="col" class="px-4 py-2 font-medium text-right align-middle w-[20%]">
+                    <div class="mb-1 text-slate-700">數量／比例／配股</div>
+                    <div class="text-slate-700">單價／退現／配息配股資訊</div>
+                </th>
+                
+                <th scope="col" class="px-4 py-2 font-medium text-right whitespace-nowrap align-middle w-[15%]">
+                    <div class="mb-1 text-slate-700">手續費</div>
+                    <div class="text-slate-700">證交稅／健保</div>
+                </th>
+                
+                <th scope="col" class="px-4 py-2 font-medium text-right align-middle w-[20%]">
+                    <div class="mb-1 text-slate-700">總額／配息</div>
+                    <div class="text-slate-700 mt-1">操作</div>
+                </th>
+            </tr>
+        </thead>
+        <tbody id="trades-list" class="divide-y divide-slate-100">
+            <!-- Dynamic Content -->
+        </tbody>
+    </table>
+</div>

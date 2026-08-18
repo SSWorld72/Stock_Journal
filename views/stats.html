@@ -1,0 +1,216 @@
+<div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-semibold text-slate-800">統計資料 (Statistics)</h2>
+    <button id="btn-stats-refresh" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="重新整理">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+    </button>
+</div>
+
+<div class="space-y-4 max-w-4xl mx-auto pb-10">
+    <!-- Row 1: 總買入 & 總賣出 & 淨投入資金 -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- 總買入 -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+            <div class="text-sm text-slate-500 mb-1 flex items-center">
+                <svg class="w-4 h-4 mr-1.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                總買入
+            </div>
+            <div class="text-2xl font-bold text-slate-800" id="stats-total-buy">0</div>
+        </div>
+        <!-- 總賣出 -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+            <div class="text-sm text-slate-500 mb-1 flex items-center">
+                <svg class="w-4 h-4 mr-1.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>
+                總賣出
+            </div>
+            <div class="text-2xl font-bold text-slate-800" id="stats-total-sell">0</div>
+        </div>
+        <!-- 淨投入資金 -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+            <div class="text-sm text-slate-500 mb-1">淨投入資金</div>
+            <div class="text-2xl font-bold text-slate-800" id="stats-net-invested">0</div>
+        </div>
+    </div>
+
+    <!-- Row 2: 已實現損益, 配股估值 -->
+    <div id="stats-row-2-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- 已實現損益 -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+            <div class="absolute right-0 bottom-0 opacity-5 w-24 h-24 transform translate-x-4 translate-y-4">
+                <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.64-2.1 1.64-1.6 0-2.34-.95-2.42-1.84h-1.71c.14 1.71 1.38 2.75 3.03 3.09V19h2.34v-1.67c1.55-.26 2.89-1.25 2.89-2.91 0-2.35-1.92-3-3.84-3.42z"/></svg>
+            </div>
+            <div class="text-sm text-slate-500 mb-1">已實現損益</div>
+            <div class="flex flex-col">
+                <div class="flex items-end gap-2">
+                    <div class="text-2xl font-bold" id="stats-realized-pnl">0</div>
+                </div>
+                <div id="stats-realized-notes" class="text-[11px] text-slate-400 mt-1 hidden">
+                    <!-- JS fills this -->
+                </div>
+            </div>
+        </div>
+        <!-- 配股估值 (獨立卡片) -->
+        <div id="stats-stock-dividend-card" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hidden">
+            <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+                <div class="text-sm font-medium text-slate-600 flex items-center">
+                    <svg class="w-4 h-4 mr-1.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    累計配股估值 <span class="text-[11px] text-slate-400 font-normal ml-2">(尚未計入已實現損益)</span>
+                </div>
+                <div class="text-xl font-bold text-blue-600" id="stats-stock-dividend-total-value">0</div>
+            </div>
+            <div id="stats-stock-dividend-list" class="flex flex-col gap-1">
+                <!-- JS 填入配股明細 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 3: 未實現持股 -->
+    <div class="bg-gradient-to-br from-indigo-50 to-blue-50 p-5 rounded-2xl shadow-sm border border-indigo-100">
+        <div class="flex items-center justify-between mb-4">
+            <div class="text-sm font-medium text-indigo-800 flex items-center">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                未實現持股 <span class="ml-1 text-indigo-600 font-bold" id="stats-unrealized-count">(0檔)</span>
+            </div>
+            <!-- loading indicator for quotes -->
+            <div id="stats-quotes-loading" class="hidden text-xs text-indigo-400 flex items-center">
+                <svg class="animate-spin w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                更新報價中...
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-4">
+            <div>
+                <div class="text-xs text-indigo-500 mb-1">成本</div>
+                <div class="text-lg font-bold text-slate-700" id="stats-unrealized-cost">0</div>
+            </div>
+            <div>
+                <div class="text-xs text-indigo-500 mb-1 flex items-center">
+                    市值
+                    <span id="stats-quote-time" class="ml-2 text-xs text-indigo-400 font-normal"></span>
+                </div>
+                <div class="text-lg font-bold text-slate-700" id="stats-unrealized-market-value">0</div>
+            </div>
+            <div>
+                <div class="text-xs text-indigo-500 mb-1">損益</div>
+                <div class="text-lg font-bold" id="stats-unrealized-pnl">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 4: 可用資金 / 帳戶總值 / 手續費 / 交易稅 -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+            <div class="text-xs text-slate-500 mb-1">可用資金</div>
+            <div class="text-lg font-bold text-slate-700" id="stats-available-funds">0</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+            <div class="text-xs text-slate-500 mb-1 flex items-center group relative">
+                帳戶總值
+                <svg class="w-3.5 h-3.5 ml-1 text-slate-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block w-48 p-2 bg-slate-800 text-white text-xs rounded shadow-lg z-10 text-center">
+                    可用資金 + 未實現持股市值
+                </div>
+            </div>
+            <div class="text-lg font-bold text-slate-700" id="stats-total-account-value">0</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+            <div class="text-xs text-slate-500 mb-1">總手續費</div>
+            <div class="text-lg font-bold text-slate-700" id="stats-total-fee">0</div>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+            <div class="text-xs text-slate-500 mb-1">總交易稅</div>
+            <div class="text-lg font-bold text-slate-700" id="stats-total-tax">0</div>
+        </div>
+    </div>
+
+    <!-- Row 5: 個別帳戶統計 -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <div class="text-sm font-medium text-slate-800 mb-3 flex items-center">
+            <svg class="w-4 h-4 mr-1.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            個別帳戶統計
+        </div>
+        <div id="stats-broker-balances" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Dynamically populated -->
+        </div>
+    </div>
+
+    <!-- Row 6: 投資組合分析 (圖表) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[350px]">
+            <div class="text-sm font-medium text-slate-800 mb-3 flex items-center justify-between">
+                <div class="flex items-center">
+                    <svg class="w-4 h-4 mr-1.5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                    總投入成本 vs 帳戶總值比較
+                </div>
+                <div class="group relative inline-block ml-1 align-middle">
+                    <svg class="w-4 h-4 text-slate-400 hover:text-purple-500 cursor-help transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div class="invisible group-hover:visible absolute z-50 w-64 p-2.5 mt-2 text-xs font-normal text-white bg-slate-800 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200" style="white-space: normal; right: 0; top: 100%;">
+                        將淨投入成本與目前帳戶總值並列比較，視覺化呈現資產增減幅。
+                    </div>
+                </div>
+            </div>
+            <div id="chart-total-value-history" class="flex-1 w-full relative"></div>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[350px]">
+            <div class="text-sm font-medium text-slate-800 mb-3 flex items-center justify-between">
+                <div class="flex items-center">
+                    <svg class="w-4 h-4 mr-1.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2"></circle><circle cx="12" cy="12" r="4" stroke-width="2"></circle></svg>
+                    各券商資產分佈
+                </div>
+                <div class="group relative inline-block ml-1 align-middle">
+                    <svg class="w-4 h-4 text-slate-400 hover:text-emerald-500 cursor-help transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div class="invisible group-hover:visible absolute z-50 w-64 p-2.5 mt-2 text-xs font-normal text-white bg-slate-800 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200" style="white-space: normal; right: 0; top: 100%;">
+                        呈現總帳戶價值在各個券商的佔比。
+                    </div>
+                </div>
+            </div>
+            <div id="chart-broker-distribution" class="flex-1 w-full relative"></div>
+        </div>
+    </div>
+
+    <!-- Row 7: 績效趨勢 (圖表) -->
+    <div class="grid grid-cols-1 gap-4">
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[400px]">
+            <div class="text-sm font-medium text-slate-800 mb-3 flex items-center justify-between">
+                <div class="flex items-center">
+                    <svg class="w-4 h-4 mr-1.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    每月已實現損益
+                </div>
+                <div class="group relative inline-block ml-1 align-middle">
+                    <svg class="w-4 h-4 text-slate-400 hover:text-indigo-500 cursor-help transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div class="invisible group-hover:visible absolute z-50 w-64 p-2.5 mt-2 text-xs font-normal text-white bg-slate-800 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200" style="white-space: normal; right: 0; top: 100%;">
+                        以月份為單位，顯示已實現損益。紅柱代表賺錢，綠柱代表賠錢。
+                    </div>
+                </div>
+            </div>
+            <div id="chart-realized-pnl" class="flex-1 w-full relative"></div>
+        </div>
+        
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[400px]">
+            <div class="text-sm font-medium text-slate-800 mb-3 flex items-center justify-between">
+                <div class="flex items-center">
+                    <svg class="w-4 h-4 mr-1.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                    資產配置圓餅圖
+                </div>
+                <div class="group relative inline-block ml-1 align-middle">
+                    <svg class="w-4 h-4 text-slate-400 hover:text-blue-500 cursor-help transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <div class="invisible group-hover:visible absolute z-50 w-64 p-2.5 mt-2 text-xs font-normal text-white bg-slate-800 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200" style="white-space: normal; right: 0; top: 100%;">
+                        顯示目前未實現持股的資金分佈比例，檢視集中度。
+                    </div>
+                </div>
+            </div>
+            <div id="chart-asset-allocation" class="flex-1 w-full relative"></div>
+        </div>
+    </div>
+
+    <!-- Row 8: 底部統計 -->
+    <div class="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500 px-2 pt-2 border-t border-slate-100">
+        <div>
+            <span id="stats-buy-count">買0筆</span>, 
+            <span id="stats-sell-count">賣0筆</span>
+        </div>
+        <div class="flex gap-4">
+            <div>總配息: <span id="stats-dividend" class="font-medium text-blue-600">0</span></div>
+            <div>折讓: <span id="stats-rebate" class="font-medium text-emerald-600">0</span></div>
+        </div>
+    </div>
+</div>
