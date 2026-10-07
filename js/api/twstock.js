@@ -125,7 +125,59 @@ export function fetchApi(path) {
         additionalParams.spreadsheet_id = settings.gasSpreadsheetId;
     }
 
+    if (settings.apiProxyMode === 'local') {
+        return fetchLocal(path, additionalParams);
+    } else if (settings.apiProxyMode === 'direct') {
+        if (path.startsWith('/api/quote')) {
+            // Yahoo is always through GAS because Yahoo does not support CORS at all and fails even with some extensions
+            return fetchViaGas(settings.gasUrl || '', path, additionalParams);
+        }
+        return fetchDirect(path, additionalParams);
+    }
+
     return fetchViaGas(settings.gasUrl || '', path, additionalParams);
+}
+
+// ===== 直接連線 (需要安裝 CORS 擴充套件) =====
+async function fetchDirect(path, params) {
+    let targetUrl = '';
+    
+    // 將內部 API 路徑映射到真實官方網址
+    if (path.startsWith('/api/twse-quote')) {
+        targetUrl = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=${params.code}&json=1&delay=0&_=${Date.now()}`;
+    } else if (path.startsWith('/api/names')) {
+        targetUrl = params.type === 'twse' 
+            ? 'https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL'
+            : 'https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes';
+    } else if (path.startsWith('/api/industry')) {
+        targetUrl = params.type === 'twse'
+            ? 'https://openapi.twse.com.tw/v1/opendata/t187ap03_L'
+            : 'https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O';
+    } else if (path.startsWith('/api/twse-daily')) {
+        targetUrl = `https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${params.date}&stockNo=${params.code}`;
+    } else if (path.startsWith('/api/tpex-daily')) {
+        targetUrl = `https://www.tpex.org.tw/web/stock/aftertrading/daily_trading_info/st43_result.php?l=zh-tw&d=${params.d}&stkno=${params.code}`;
+    } else if (path.startsWith('/api/twse-inst')) {
+        targetUrl = `https://www.twse.com.tw/fund/T86?response=json&date=${params.date}&selectType=ALL`;
+    } else if (path.startsWith('/api/twse-margin')) {
+        targetUrl = `https://www.twse.com.tw/exchangeReport/MI_MARGN?response=json&date=${params.date}&selectType=ALL`;
+    } else if (path.startsWith('/api/tpex-inst')) {
+        targetUrl = `https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php?l=zh-tw&o=json&se=EW&t=D&d=${params.d}`;
+    } else if (path.startsWith('/api/tpex-margin')) {
+        targetUrl = `https://www.tpex.org.tw/web/stock/margin_trading/margin_balance/margin_bal_result.php?l=zh-tw&o=json&d=${params.d}`;
+    } else {
+        throw new Error(`[Direct] Unsupported path: ${path}`);
+    }
+
+    const res = await fetch(targetUrl);
+    // 回傳類似 Response 的物件供後續處理
+    const text = await res.text();
+    return {
+        ok: res.ok,
+        status: res.status,
+        text: () => Promise.resolve(text),
+        json: () => Promise.resolve(JSON.parse(text))
+    };
 }
 
 // ===== 共用 Headers =====
@@ -597,6 +649,7 @@ export async function getQuoteForCode(code, forceBulk = false) {
         let quoteData = null;
 
         if (preferFugle) {
+            console.log(`[TWStock] 正在獲取即時報價 (from 富果行情) ${cleaned}...（getQuoteForCode）`);
             quoteData = await fetchQuoteFromFugle(cleaned);
             if (quoteData) {
                 quoteData.code = cleaned;
@@ -606,19 +659,24 @@ export async function getQuoteForCode(code, forceBulk = false) {
             }
             if (!quoteData || quoteData.status === 'error') {
                 console.warn(`[TWStock] Fugle 失敗或未設定 Token，嘗試 MIS 備援（getQuoteForCode）: ${cleaned}`);
+                console.log(`[TWStock] 正在獲取即時報價 (from 台灣證券交易所 MIS) ${cleaned}...（getQuoteForCode）`);
                 quoteData = await fetchQuoteFromMis(cleaned);
             }
         } else if (preferYahoo) {
+            console.log(`[TWStock] 正在獲取即時報價 (from Yahoo 股市 API) ${cleaned}...（getQuoteForCode）`);
             quoteData = await fetchQuoteFromYahoo(cleaned);
             if (!quoteData || quoteData.status === 'error') {
                 console.warn(`[TWStock] Yahoo 失敗，嘗試 MIS 備援（getQuoteForCode）: ${cleaned}`);
+                console.log(`[TWStock] 正在獲取即時報價 (from 台灣證券交易所 MIS) ${cleaned}...（getQuoteForCode）`);
                 const misQuote = await fetchQuoteFromMis(cleaned);
                 if (misQuote) quoteData = misQuote;
             }
         } else {
+            console.log(`[TWStock] 正在獲取即時報價 (from 台灣證券交易所 MIS) ${cleaned}...（getQuoteForCode）`);
             quoteData = await fetchQuoteFromMis(cleaned);
             if (!quoteData || quoteData.status === 'error') {
                 console.warn(`[TWStock] MIS 失敗，嘗試 Yahoo 備援（getQuoteForCode）: ${cleaned}`);
+                console.log(`[TWStock] 正在獲取即時報價 (from Yahoo 股市 API) ${cleaned}...（getQuoteForCode）`);
                 const yahooQuote = await fetchQuoteFromYahoo(cleaned);
                 if (yahooQuote) quoteData = yahooQuote;
             }
@@ -1419,7 +1477,7 @@ export async function downloadChipsData(startDate, endDate, onProgress, force = 
             }
 
             console.log(`[TWStock] Chips 正在抓取 ${isoDate} 籌碼資料... (請稍候)（downloadChipsData）`);
-            const { count: recordCount, hasMargin } = await fetchAndStoreChipsForDate(dateStrTWSE, dateStrTPEx, isoDate);
+            const { count: recordCount, hasMargin, marginError } = await fetchAndStoreChipsForDate(dateStrTWSE, dateStrTPEx, isoDate);
             
             // 標記為已抓取，並記錄筆數與融資融券狀態（營業日即便無資料亦絕不隨意標記為休市日）
             await putRecord('ChipsCache', { 
@@ -1429,6 +1487,7 @@ export async function downloadChipsData(startDate, endDate, onProgress, force = 
                 count: recordCount, 
                 version: 2, 
                 hasMargin: hasMargin,
+                marginError: marginError,
                 isHoliday: false
             });
 
@@ -1441,7 +1500,10 @@ export async function downloadChipsData(startDate, endDate, onProgress, force = 
                     console.log(`[TWStock] Chips ${isoDate} 營業日查無市場資料 (0 筆)（downloadChipsData）`);
                 }
             } else {
-                const marginStatusText = hasMargin ? '' : ' (融資融券稍晚公佈)';
+                let marginStatusText = '';
+                if (!hasMargin) {
+                    marginStatusText = marginError ? ' (融資融券抓取失敗/被阻擋)' : ' (融資融券稍晚公佈)';
+                }
                 console.log(`[TWStock] Chips ${isoDate} 籌碼抓取完成，共 ${recordCount} 筆${marginStatusText}（downloadChipsData）`);
             }
 
@@ -1548,6 +1610,12 @@ async function fetchAndStoreChipsForDate(twseDate, tpexDate, isoDate) {
         }
     }
 
+    // 如果有任何一個 API 回傳 null (代表連線失敗或被阻擋)，強迫將 hasMargin 設為 false，以確保未來會重新觸發補抓
+    const marginError = (twseMargin === null || tpexMargin === null);
+    if (marginError) {
+        hasMargin = false; 
+    }
+    
     // Save to DB
     let count = 0;
     for (const [code, data] of Object.entries(dailyData)) {
@@ -1561,7 +1629,8 @@ async function fetchAndStoreChipsForDate(twseDate, tpexDate, isoDate) {
         await putRecord('ChipsCache', record).catch(e => console.warn(`[資料庫] Failed to put chip record ${record.id}（fetchAndStoreChipsForDate）`, e));
         count++;
     }
-    return { count, hasMargin };
+    
+    return { count, hasMargin, marginError };
 }
 
 // 只補抓融資融券資料，合併到既有的三大法人記錄中
@@ -1643,9 +1712,9 @@ export async function getChipsDataForCode(code, limit = 30) {
 }
 
 // ===== 取得歷史 K 線報價（用於籌碼圖表收盤價疊加） =====
-export async function getHistoricalKLine(code, exch = 'tse', range = '6mo') {
+export async function getHistoricalKLine(code, exch = 'tse', range = '6mo', period1 = null, period2 = null) {
     if (settings.klineSource === 'fugle') {
-        const fugleKLine = await fetchHistoricalKLineFromFugle(code);
+        const fugleKLine = await fetchHistoricalKLineFromFugle(code, period1, period2);
         if (fugleKLine && fugleKLine.length > 0) return fugleKLine;
         console.warn(`[TWStock] Fugle K線失敗或未設定 Token，嘗試 Yahoo 備援（getHistoricalKLine）: ${code}`);
     }
@@ -1654,7 +1723,13 @@ export async function getHistoricalKLine(code, exch = 'tse', range = '6mo') {
 
 // [POST 隱藏] 已改用 fetchApi() 直接呼叫
     try {
-        const res = await fetchApi(`/api/quote?code=${symbol}&interval=1d&range=${range}`);
+        let apiUrl = `/api/quote?code=${symbol}&interval=1d`;
+        if (period1 && period2) {
+            apiUrl += `&period1=${period1}&period2=${period2}`;
+        } else {
+            apiUrl += `&range=${range}`;
+        }
+        const res = await fetchApi(apiUrl);
         if (!res.ok) return [];
         const data = await res.json();
         const result = data?.chart?.result?.[0];
@@ -1755,7 +1830,19 @@ export async function syncStockData(code, updateMode = 'GLOBAL') {
     const fetchKline = (updateMode === 'GLOBAL' || updateMode === 'GROUP' || updateMode === 'AUTO');
     
     if (fetchKline) {
-        histKLine = await getHistoricalKLine(code, exch, '6mo') || [];
+        // 依據使用者在設定中抓取籌碼的起迄時間 (chipsStartDate / chipsEndDate) 來精確抓取 K 線
+        let period1 = null;
+        let period2 = null;
+        if (settings.chipsStartDate) {
+            const start = new Date(settings.chipsStartDate);
+            start.setHours(0, 0, 0, 0);
+            period1 = Math.floor(start.getTime() / 1000);
+            
+            const end = settings.chipsEndDate ? new Date(settings.chipsEndDate) : new Date();
+            end.setHours(23, 59, 59, 999);
+            period2 = Math.floor(end.getTime() / 1000);
+        }
+        histKLine = await getHistoricalKLine(code, exch, '2y', period1, period2) || [];
     }
     
     const record = {

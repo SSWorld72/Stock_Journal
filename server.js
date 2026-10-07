@@ -46,7 +46,14 @@ const server = http.createServer((req, res) => {
             return;
         }
 
-        const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=${interval}&range=${range}`;
+        let targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=${interval}`;
+        const period1 = parsedUrl.searchParams.get('period1');
+        const period2 = parsedUrl.searchParams.get('period2');
+        if (period1 && period2) {
+            targetUrl += `&period1=${period1}&period2=${period2}`;
+        } else {
+            targetUrl += `&range=${range}`;
+        }
         console.log(`[代理] 正在抓取即時報價 (from Yahoo Finance API): ${targetUrl}`);
 
         fetch(targetUrl, {

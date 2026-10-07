@@ -1,5 +1,19 @@
 import { loadSettings, settings } from './store.js';
 import '../utils/js/logger.js';
+import zhTW from '../utils/i18n/zh-TW.js';
+
+// === Initialize Global i18n Engine ===
+window.t = function(key, params = {}) {
+    let value = key.split('.').reduce((obj, k) => (obj || {})[k], zhTW);
+    if (value === undefined || value === null) return key;
+    if (typeof value === 'string' && params && typeof params === 'object') {
+        Object.keys(params).forEach(paramKey => {
+            const regex = new RegExp(`{${paramKey}}`, 'g');
+            value = value.replace(regex, params[paramKey]);
+        });
+    }
+    return value;
+};
 import { initSettings, renderSettings } from './tabs/settings.js';
 import { initMarket, renderMarket, cleanupMarket } from './tabs/market.js';
 import { initTrades, renderTrades, initGlobalTradeModal } from './tabs/trades.js';
@@ -49,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Initialize Global Footer
         initGlobalFooter({
             appName: 'Stock Journal',
-            version: 'v2.0.4',
+            version: 'v2.0.5',
             githubUrl: 'https://github.com/SSWorld72/Stock_Journal'
         });
 

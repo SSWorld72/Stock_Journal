@@ -262,28 +262,31 @@ export async function renderStats(forceRefresh = false) {
             div.innerHTML = `
                 <div class="flex items-center justify-between border-b border-slate-200/80 pb-2.5 px-3">
                     <span class="inline-block px-1.5 py-0.5 ${badgeColor} rounded text-[10px] font-medium border shadow-xs">${bName}</span>
-                    <span class="text-xs text-slate-400">折讓率 <span class="text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">${rebatePct.toFixed(1)}%</span></span>
+                    <span class="text-xs text-slate-400 flex items-center gap-1.5">折讓率 <span class="text-emerald-600 font-bold text-lg bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">${rebatePct.toFixed(1)}%</span></span>
                 </div>
                 <div class="grid grid-cols-2 gap-y-2.5 text-xs pt-0.5">
                     <div class="bg-white/90 py-2.5 px-3 rounded-lg border border-slate-100 shadow-2xs w-[97%] mx-auto flex flex-col justify-between">
-                        <div class="text-slate-400 mb-0.5 text-[11px]">手續費</div>
-                        <div class="font-semibold text-slate-700 text-sm font-mono text-right">${formatNum(b.fee)}</div>
+                        <div class="text-slate-500 font-medium text-xs mb-0.5">手續費</div>
+                        <div class="font-bold text-slate-700 text-lg font-mono text-right">${formatNum(b.fee)}</div>
                     </div>
                     <div class="bg-white/90 py-2.5 px-3 rounded-lg border border-slate-100 shadow-2xs w-[97%] mx-auto flex flex-col justify-between">
-                        <div class="text-slate-400 mb-0.5 text-[11px]">手續費折讓</div>
-                        <div class="font-semibold ${b.rebate > 0 ? 'text-emerald-600' : 'text-slate-600'} text-sm font-mono text-right">${formatNum(b.rebate)}</div>
+                        <div class="text-slate-500 font-medium text-xs mb-0.5">手續費折讓</div>
+                        <div class="font-bold ${b.rebate > 0 ? 'text-emerald-600' : 'text-slate-600'} text-lg font-mono text-right">${formatNum(b.rebate)}</div>
                     </div>
                     <div class="bg-white/90 py-2.5 px-3 rounded-lg border border-slate-100 shadow-2xs w-[97%] mx-auto flex flex-col justify-between">
-                        <div class="text-slate-400 mb-0.5 text-[11px]">交易稅</div>
-                        <div class="font-semibold text-slate-700 text-sm font-mono text-right">${formatNum(b.tax)}</div>
+                        <div class="text-slate-500 font-medium text-xs mb-0.5">交易稅</div>
+                        <div class="font-bold text-slate-700 text-lg font-mono text-right">${formatNum(b.tax)}</div>
                     </div>
                     <div class="bg-white/90 py-2.5 px-3 rounded-lg border border-slate-100 shadow-2xs w-[97%] mx-auto flex flex-col justify-between">
-                        <div class="text-slate-400 mb-0.5 text-[11px]">配息總計</div>
-                        <div class="font-semibold ${b.dividend > 0 ? 'text-blue-600' : 'text-slate-700'} text-sm font-mono text-right">${formatNum(b.dividend)}</div>
+                        <div class="text-slate-500 font-medium text-xs mb-0.5">配息總計</div>
+                        <div class="font-bold ${b.dividend > 0 ? 'text-blue-600' : 'text-slate-700'} text-lg font-mono text-right">${formatNum(b.dividend)}</div>
                     </div>
                     <div class="col-span-2 bg-white py-2.5 px-3 rounded-lg border border-slate-200/90 shadow-2xs flex items-center justify-between w-[97%] mx-auto mt-2.5">
-                        <div class="text-slate-500 font-medium text-xs">可用資金</div>
-                        <div class="font-bold ${b.balance >= 0 ? 'text-slate-800' : 'text-rose-600'} text-base font-mono">${formatNum(b.balance)}</div>
+                        <div class="flex flex-col">
+                            <div class="text-slate-500 font-medium text-xs">可用資金</div>
+                            <div class="text-slate-400 text-[9px] mt-0.5 whitespace-nowrap">（已含 T+2 未交割款）</div>
+                        </div>
+                        <div class="font-bold ${b.balance >= 0 ? 'text-slate-800' : 'text-rose-600'} text-lg font-mono">${formatNum(b.balance)}</div>
                     </div>
                 </div>
             `;

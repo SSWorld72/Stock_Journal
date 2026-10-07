@@ -414,7 +414,7 @@ export function initSettings() {
                 };
                 settings.chipsStartDate = startDate;
                 settings.chipsEndDate = endDate;
-                saveSettings();
+                saveSettings(true); // 傳入 true 防止觸發無意義的背景自動備份 (籌碼資料不需備份)
                 if (lastDownloadInfo) {
                     lastDownloadInfo.innerText = `上次更新時間：${new Date(settings.chipsLastDownload.timestamp).toLocaleString('zh-TW', { hour12: false })} (至 ${settings.chipsLastDownload.endDate})`;
                 }

@@ -11,7 +11,7 @@ let expandedStockCode = null;
 let expandedTab = 'trades';
 let marketSortColumn = 'code';
 let marketSortDirection = 'asc';
-let currentMarketTab = 'full';
+let currentMarketTab = 'all';
 let activeBrokerFilters = null; // Set of active broker IDs
 
 const BROKER_COLORS = [
@@ -188,88 +188,7 @@ export function initMarket() {
             if (rowIcon) rowIcon.classList.remove('animate-spin');
             renderList();
 
-            // 跳出通知告知使用者籌碼無法單獨取得
-            setTimeout(() => {
-                let chipsInfoStr = '未知';
-                let recommendUpdate = false;
 
-                try {
-                    if (settings.chipsLastDownload && settings.chipsLastDownload.timestamp) {
-                        const dateObj = new Date(settings.chipsLastDownload.timestamp);
-                        const timeStr = `${dateObj.getFullYear()}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
-
-                        // 顯示抓取時間與抓取的目標資料日期(endDate)
-                        chipsInfoStr = `${settings.chipsLastDownload.endDate} (抓取時間: ${timeStr})`;
-
-                        const lastDateStr = settings.chipsLastDownload.endDate.replace(/-/g, '');
-                        const now = new Date();
-                        const todayStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-
-                        // 簡單判斷：如果最後更新日期不是今天，且現在時間超過 17:00，建議更新
-                        if (lastDateStr < todayStr && now.getHours() >= 17) {
-                            recommendUpdate = true;
-                        } else if (lastDateStr < todayStr && now.getHours() < 17) {
-                            // 如果是早上，且連昨天的都沒有，也建議更新
-                            const yesterday = new Date(now.getTime() - 86400000);
-                            const yesterdayStr = `${yesterday.getFullYear()}${String(yesterday.getMonth() + 1).padStart(2, '0')}${String(yesterday.getDate()).padStart(2, '0')}`;
-                            if (lastDateStr < yesterdayStr) {
-                                recommendUpdate = true;
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.error("[市場] 解析 chipsLastDownload 失敗（refreshSingle）:", e);
-                }
-
-                let msg = `※ 證交所的【籌碼資料】為全市場統一發布，無法針對單一股票單獨下載。\n`;
-                msg += `目前系統內的籌碼最後更新為：${chipsInfoStr}\n\n`;
-
-                if (recommendUpdate) {
-                    msg += `💡 系統偵測到今天可能有最新的籌碼資料，建議您進行全局更新。\n\n是否要現在立即幫您一併把全市場的「最新籌碼資料」都下載回來？`;
-                    showCustomDialog({
-                        title: `已單獨更新「${code}」的最新報價`,
-                        content: msg,
-                        type: 'confirm',
-                        onConfirm: async () => {
-                            const icon = document.getElementById(`btn-refresh-single-${code}`);
-                            const rowIcon = document.getElementById(`btn-refresh-row-${code}`);
-                            if (icon) icon.classList.add('animate-spin');
-                            if (rowIcon) rowIcon.classList.add('animate-spin');
-
-                            // 1. 抓取全市場籌碼
-                            await syncLatestChipsData();
-                            // 2. 重新單獨更新此檔股票的報價與籌碼
-                            const updatedRecord = await syncStockData(code, true);
-                            if (updatedRecord) {
-                                currentQuotes[code] = updatedRecord.quote;
-                                chartDataCache[code] = {
-                                    intraday: updatedRecord.intraday,
-                                    technical: updatedRecord.technical,
-                                    historicalChipsKLine: updatedRecord.historicalChipsKLine,
-                                    lastUpdated: updatedRecord.lastUpdated
-                                };
-                            }
-
-                            if (icon) icon.classList.remove('animate-spin');
-                            if (rowIcon) rowIcon.classList.remove('animate-spin');
-                            renderList();
-
-                            // 若目前展開的是這檔股票的籌碼頁籤，強制重新渲染
-                            if (expandedStockCode === code && expandedTab === 'chips') {
-                                window.marketTab.toggleStockDetails(code);
-                                setTimeout(() => window.marketTab.toggleStockDetails(code), 50);
-                            }
-                        }
-                    });
-                } else {
-                    msg += `系統判斷目前的籌碼資料已經是最新的，無須重複下載浪費網路流量！\n(若仍需強制重新下載，請點擊左上角的「全局更新」按鈕)`;
-                    showCustomDialog({
-                        title: `已單獨更新「${code}」的最新報價`,
-                        content: msg,
-                        type: 'alert'
-                    });
-                }
-            }, 100);
         },
 
         switchTab: (tabId) => {
@@ -488,6 +407,7 @@ export function initMarket() {
             });
 
             const groupFilters = {
+                'all': i => (settings.transactions || []).some(t => t.code === i.code),
                 'full': i => i.metrics.shares >= 1000,
                 'odd': i => i.metrics.shares > 0 && i.metrics.shares < 1000,
                 'sold': i => i.metrics.shares === 0 && (settings.transactions || []).some(t => t.code === i.code),
@@ -792,7 +712,7 @@ async function refreshQuotes(isManual = false) {
     renderList();
 }
 
-function getBrokersForCode(code) {
+function getActiveBrokersForCode(code) {
     const transactions = settings.transactions || [];
 
     // Get today as the cutoff date (only count transactions up to today)
@@ -809,22 +729,18 @@ function getBrokersForCode(code) {
     const allBrokerIds = new Set();
     sortedTrades.forEach(t => {
         if (t.category === 'trade' && t.type === 'buy' && t.brokerId) {
-            allBrokerIds.add(t.brokerId);
+            allBrokerIds.add(String(t.brokerId));
         }
     });
 
-    if (allBrokerIds.size === 0) return '<span class="text-slate-400">-</span>';
+    if (allBrokerIds.size === 0) return { activeBrokerIds: [], allBrokerIds: [] };
 
-    // For each broker, calculate holdings up to (but not including) tomorrow
-    // using the same logic as getHoldingsAtDate
     const activeBrokerIds = [];
-    allBrokerIds.forEach(brokerId => {
-        let shares = 0;
-        let totalShares = 0; // total across all brokers for ratio calculations
-
-        // We need total shares for capital_change ratio (affects all brokers equally)
-        // First pass: calculate total shares across all brokers up to today
+    allBrokerIds.forEach(brokerIdStr => {
+        const brokerId = parseInt(brokerIdStr, 10);
+        let brokerShares = 0;
         let totalAllBrokers = 0;
+        
         for (const t of sortedTrades) {
             if (new Date(t.date) > todayDate) continue;
             if (t.category === 'trade') {
@@ -839,10 +755,6 @@ function getBrokersForCode(code) {
             }
         }
 
-        // Second pass: calculate per-broker shares up to today
-        // For simplicity, track per-broker buy/sell; capital changes apply proportionally
-        let brokerShares = 0;
-        let totalBeforeChange = 0;
         for (const t of sortedTrades) {
             if (new Date(t.date) > todayDate) continue;
             if (t.category === 'trade') {
@@ -853,13 +765,9 @@ function getBrokersForCode(code) {
                     brokerShares -= (t.quantity || 0);
                 }
             } else if (t.category === 'dividend') {
-                // Stock dividends are distributed proportionally to existing holdings
-                // We track total at this point to calculate proportion
-                // Simplified: attribute dividend shares proportionally by broker ratio
                 if (t.type === 'stock' || t.type === 'both') {
                     const totalAtTime = Math.max(totalAllBrokers, 1);
                     const added = t.type === 'stock' ? (t.amount || 0) : (t.stockAmount || 0);
-                    // Proportional attribution
                     brokerShares += Math.floor(added * (brokerShares / totalAtTime));
                 }
             } else if (t.category === 'capital_change') {
@@ -868,14 +776,25 @@ function getBrokersForCode(code) {
             }
         }
 
-        if (brokerShares > 0) activeBrokerIds.push(brokerId);
+        if (brokerShares > 0) activeBrokerIds.push(String(brokerId));
     });
+
+    return { 
+        activeBrokerIds, 
+        allBrokerIds: Array.from(allBrokerIds) 
+    };
+}
+
+function getBrokersForCode(code) {
+    const { activeBrokerIds, allBrokerIds } = getActiveBrokersForCode(code);
+
+    if (allBrokerIds.length === 0) return '<span class="text-slate-400">-</span>';
 
     let displayBrokerIds = activeBrokerIds;
     // 如果全部券商的庫存都是 0 (代表這檔股票已完全出清)
     // 則顯示所有曾經交易過的券商，符合「已出清頁面顯示已出清券商」的需求
     if (activeBrokerIds.length === 0) {
-        displayBrokerIds = Array.from(allBrokerIds);
+        displayBrokerIds = allBrokerIds;
     }
     
     if (displayBrokerIds.length === 0) return '<span class="text-slate-400">-</span>';
@@ -883,7 +802,7 @@ function getBrokersForCode(code) {
     const brokers = settings.brokers || [];
     const brokerObjs = [];
     displayBrokerIds.forEach(id => {
-        const b = brokers.find(br => br.id === id || String(br.id) === String(id));
+        const b = brokers.find(br => String(br.id) === String(id));
         if (b) brokerObjs.push(b);
     });
 
@@ -1352,23 +1271,23 @@ export function renderList() {
     const filteredItems = items.filter(item => {
         if (!activeBrokerFilters) return true;
         
-        const transactions = settings.transactions || [];
-        const stockBrokers = new Set();
-        transactions.forEach(t => {
-            if (t.code === item.code && t.brokerId) {
-                stockBrokers.add(String(t.brokerId));
-            }
-        });
+        const { activeBrokerIds, allBrokerIds } = getActiveBrokersForCode(item.code);
         
-        if (stockBrokers.size === 0) return true; // Keep tracking stocks
+        let displayBrokerIds = activeBrokerIds;
+        if (activeBrokerIds.length === 0) {
+            displayBrokerIds = allBrokerIds;
+        }
+
+        if (displayBrokerIds.length === 0) return true; // Keep tracking stocks
         
-        for (let b of stockBrokers) {
-            if (activeBrokerFilters.has(b)) return true;
+        for (let b of displayBrokerIds) {
+            if (activeBrokerFilters.has(String(b))) return true;
         }
         return false;
     });
 
     const groups = [
+        { id: 'all', name: '全部', filter: i => i.hasTrades, items: [] },
         { id: 'full', name: '完整持股', filter: i => i.metrics.shares >= 1000, items: [] },
         { id: 'odd', name: '零股持股', filter: i => i.metrics.shares > 0 && i.metrics.shares < 1000, items: [] },
         { id: 'sold', name: '已出清', filter: i => i.metrics.shares === 0 && i.hasTrades, items: [] },
@@ -1388,14 +1307,14 @@ export function renderList() {
     }
 
     filteredItems.forEach(item => {
-        // 先判斷原本的四個基本群組 (因為追蹤清單和已出清允許重疊，所以移除 break，讓每個符合的都加入)
-        for (let i = 0; i < 4; i++) {
+        // 先判斷原本的五個基本群組 (因為追蹤清單和已出清允許重疊，所以移除 break，讓每個符合的都加入)
+        for (let i = 0; i < 5; i++) {
             if (groups[i].filter(item)) {
                 groups[i].items.push(item);
             }
         }
         // 再判斷所有自訂清單，這可以重複加入
-        for (let i = 4; i < groups.length; i++) {
+        for (let i = 5; i < groups.length; i++) {
             if (groups[i].filter(item)) {
                 groups[i].items.push(item);
             }
@@ -1521,6 +1440,7 @@ export function renderList() {
                     <div class="flex items-start gap-1.5">
                         <div class="flex flex-col items-center gap-1">
                             <input type="checkbox" class="market-checkbox rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" data-code="${code}" onclick="event.stopPropagation()">
+                            <div class="text-[10px] text-slate-400 font-medium" title="序號">${index + 1}</div>
                             <button class="text-slate-300 hover:text-red-500 transition-colors p-0.5 rounded" onclick="event.stopPropagation(); window.marketTab.deleteStock('${code}')" title="刪除">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                             </button>
@@ -1553,9 +1473,9 @@ export function renderList() {
                             <span class="text-xs">${timeDisplay}</span>
                         </div>
                         <div class="flex items-center gap-2 text-xs">
-                            <button class="text-pink-600 bg-pink-50 hover:bg-pink-100 p-0.5 px-1 rounded transition-colors border border-pink-100 flex items-center gap-1" onclick="event.stopPropagation(); window.marketTab.refreshSingle('${code}')">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                更新報價
+                            <button id="btn-refresh-row-wrapper-${code}" class="text-pink-600 bg-pink-50 hover:bg-pink-100 p-0.5 px-1 rounded transition-colors border border-pink-100 flex items-center gap-1" onclick="event.stopPropagation(); window.marketTab.refreshSingle('${code}')">
+                                <svg id="btn-refresh-row-${code}" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                <span id="btn-refresh-row-text-${code}">更新報價</span>
                             </button>
                         </div>
                     </div>
@@ -1574,8 +1494,8 @@ export function renderList() {
                     <div class="pt-1 flex items-center justify-center">
                         <input type="checkbox" class="market-checkbox rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" data-code="${code}">
                     </div>
-                    <!-- 隱形佔位符，對應右邊的「名稱」那一行，解決「少換一行」的問題 -->
-                    <div class="mt-0.5 text-sm leading-tight text-transparent select-none opacity-0" aria-hidden="true">_</div>
+                    <!-- 流水號，取代隱形佔位符，對應右邊的「名稱」那一行 -->
+                    <div class="mt-0.5 text-[11px] leading-tight text-slate-400 font-medium" title="序號">${index + 1}</div>
                     <div class="mt-1 flex items-center justify-center">
                         <button class="text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-0.5 rounded" onclick="window.marketTab.deleteStock('${code}')" title="刪除">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -1633,7 +1553,7 @@ export function renderList() {
 
         if (expandedStockCode === code) {
             const detailRow = document.createElement('tr');
-            detailRow.className = 'bg-slate-50/50 border-b border-slate-100';
+            detailRow.className = 'block md:table-row bg-slate-50/50 border-b border-slate-100';
 
             const isTabQuote = expandedTab === 'quote';
             const isTabChips = expandedTab === 'chips';
@@ -1643,7 +1563,7 @@ export function renderList() {
             const inactiveClass = "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50";
 
             detailRow.innerHTML = `
-                <td colspan="10" class="p-0">
+                <td colspan="10" class="block md:table-cell p-0">
                     <div class="px-3 sm:px-6 py-4 sm:py-5 shadow-inner bg-slate-50/50">
                         <div class="flex sm:inline-flex w-full sm:w-auto items-center p-1 sm:p-1.5 bg-slate-200/70 rounded-xl mb-6 shadow-inner gap-1 sm:gap-0">
                             <button onclick="window.marketTab.setExpandedTab('trades')" class="flex-1 sm:flex-none px-1 sm:px-6 py-1.5 sm:py-2 rounded-lg text-sm sm:text-base font-bold transition-all whitespace-nowrap ${isTabTrades ? activeClass : inactiveClass}">交易紀錄</button>

@@ -240,7 +240,14 @@ function fetchYahooQuote(params) {
   const interval = params.interval || '1d';
   if (!symbol) throw new Error('缺少 code 股票代號參數 (Missing code parameter)');
   
-  const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=${interval}&range=${range}`;
+  let targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=${interval}`;
+  
+  if (params.period1 && params.period2) {
+    targetUrl += `&period1=${params.period1}&period2=${params.period2}`;
+  } else {
+    targetUrl += `&range=${range}`;
+  }
+  
   const response = UrlFetchApp.fetch(targetUrl, { muteHttpExceptions: true });
   return response.getContentText();
 }

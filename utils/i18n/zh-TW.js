@@ -198,22 +198,6 @@ export default {
             btnOk: '了解'
         }
     },
-    ui: {
-        settings: {
-            systemLogs: {
-                title: '系統日誌 (System Logs)',
-                placeholderSearch: '搜尋時間 (如 11:36) 或關鍵字...',
-                titleCopy: '複製過濾後的日誌',
-                btnCopy: '複製',
-                btnExport: '匯出日誌',
-                titleClear: '清除日誌',
-                btnClear: '清除',
-                desc: '顯示最近 999 筆主控台日誌，方便排解連線或資料抓取問題。',
-                confirmClear: '確定要清除所有系統日誌嗎？',
-                emptyExport: '沒有日誌可以匯出'
-            }
-        }
-    },
     logs: {
         i18n: {
             init: '[i18n] 初始化多語系引擎，字典鍵值數: {count}',
@@ -349,6 +333,18 @@ export default {
             releaseDate: '發布日期：{date}'
         },
         settings: {
+            systemLogs: {
+                title: '系統日誌 (System Logs)',
+                placeholderSearch: '搜尋時間 (如 11:36) 或關鍵字...',
+                titleCopy: '複製過濾後的日誌',
+                btnCopy: '複製',
+                btnExport: '匯出日誌',
+                titleClear: '清除日誌',
+                btnClear: '清除',
+                desc: '顯示最近 999 筆主控台日誌，方便排解連線或資料抓取問題。',
+                confirmClear: '確定要清除所有系統日誌嗎？',
+                emptyExport: '沒有日誌可以匯出'
+            },
             dangerZone: {
                 title: '危險區域 (Danger Zone)',
                 desc: '清空本機的所有資料與設定。此操作無法復原。',

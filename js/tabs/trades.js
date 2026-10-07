@@ -1,5 +1,5 @@
 import { settings, saveSettings } from '../store.js';
-import { getQuoteForCode } from '../api/twstock.js';
+import { getQuoteForCode, loadStockDataFromCache } from '../api/twstock.js';
 
 let currentSortColumn = 'date';
 let currentSortDirection = 'desc';
@@ -368,7 +368,7 @@ export function buildMobileTradeInfoGrid(t, vals) {
                 <span class="font-medium">${displayQty}</span>
             </div>` : ''}
             <div class="flex justify-between items-center">
-                <span class="text-slate-400 text-[10px]">${typ === 'both' ? '配息／配股(元)' : '每股配息'}</span>
+                <span class="text-slate-400 text-[10px]">${typ === 'both' ? '配息/配股(元)' : '每股配息'}</span>
                 <span class="text-slate-500">${displayPrice}</span>
             </div>
         </div>
@@ -394,11 +394,11 @@ export function buildMobileTradeInfoGrid(t, vals) {
     <div class="bg-white/40 rounded border border-white/50 p-2.5 text-sm text-slate-700 flex flex-wrap gap-x-4 gap-y-2">
         <div class="flex-[3] min-w-[150px]">
             <div class="flex justify-between items-center mb-1.5">
-                <span class="text-slate-400 text-[10px]">數量／比例／配股</span>
+                <span class="text-slate-400 text-[10px]">數量/比例/配股</span>
                 <span class="font-medium">${displayQty}</span>
             </div>
             <div class="flex justify-between items-center">
-                <span class="text-slate-400 text-[10px]">單價／退現／配息配股</span>
+                <span class="text-slate-400 text-[10px]">單價/退現/配息配股</span>
                 <span class="text-slate-500">${displayPrice}</span>
             </div>
         </div>
@@ -408,7 +408,7 @@ export function buildMobileTradeInfoGrid(t, vals) {
                 <span class="font-medium">${displayFee}</span>
             </div>
             <div class="flex justify-between items-start">
-                <span class="text-slate-400 text-[10px] pt-0.5">證交稅／健保</span>
+                <span class="text-slate-400 text-[10px] pt-0.5">證交稅/健保</span>
                 <div class="text-right">
                     <span class="text-slate-500 block">${displayTax}</span>
                     ${displayNhi}
@@ -498,7 +498,8 @@ export function initGlobalTradeModal() {
     let userManuallyOverrodeMarket = false;
 
     // --- State Management ---
-    const setTradeType = (val) => {
+    const setTradeType = (val, isInit = false) => {
+        const previousType = currentTradeType;
         currentTradeType = val;
         tradeTypeBtns.forEach(btn => {
             if (btn.dataset.value === val) {
@@ -507,7 +508,46 @@ export function initGlobalTradeModal() {
                 btn.className = "trade-type-btn px-4 py-1.5 rounded-lg border text-sm transition-colors bg-white text-slate-700 border-slate-200 hover:border-slate-300 font-medium";
             }
         });
-        updateFormUI();
+
+        if (!isInit && previousType !== val) {
+            const isBuySell = (t) => t === 'buy' || t === 'sell';
+            const isDiv = (t) => t.startsWith('dividend');
+            const isCap = (t) => t.startsWith('capital');
+            const isAcc = (t) => t.startsWith('account');
+            
+            if ( (isBuySell(previousType) && !isBuySell(val)) ||
+                 (isDiv(previousType) && !isDiv(val)) ||
+                 (isCap(previousType) && !isCap(val)) ||
+                 (isAcc(previousType) && !isAcc(val)) ) {
+                if (field1) field1.input.value = '';
+                if (field2) field2.input.value = '';
+                if (field3) field3.input.value = '';
+                if (field4) field4.input.value = '';
+                if (field5) field5.input.value = '';
+                if (field6) field6.input.value = '';
+            } else {
+                // Same major category, check if sub-category meanings changed
+                if (isDiv(previousType) && isDiv(val)) {
+                    // dividend_stock uses field1 for Stock DPS, others use it for Cash DPS
+                    if (previousType === 'dividend_stock' || val === 'dividend_stock') {
+                        if (field1) field1.input.value = '';
+                        if (field4) field4.input.value = '';
+                        if (field5) field5.input.value = '';
+                        if (field6) field6.input.value = '';
+                    }
+                } else if (isCap(previousType) && isCap(val)) {
+                    // reduction ratio vs split ratio
+                    if (previousType !== val) {
+                        if (field1) field1.input.value = '';
+                        // keep field2 (shares) and field3 (calculated shares) as they might still be useful, 
+                        // but field3 will recalculate based on empty field1 anyway
+                    }
+                }
+            }
+        }
+
+        updateFormUI(isInit);
+        updateCalculations();
     };
 
     const setStockType = (val) => {
@@ -548,7 +588,7 @@ export function initGlobalTradeModal() {
         updateCalculations();
     };
 
-    tradeTypeBtns.forEach(btn => btn.addEventListener('click', () => setTradeType(btn.dataset.value)));
+    tradeTypeBtns.forEach(btn => btn.addEventListener('click', () => setTradeType(btn.dataset.value, false)));
     stockTypeBtns.forEach(btn => btn.addEventListener('click', () => {
         userManuallyOverrodeType = true;
         setStockType(btn.dataset.value);
@@ -574,7 +614,7 @@ export function initGlobalTradeModal() {
         }
     };
 
-    const updateFormUI = () => {
+    const updateFormUI = (isInit = false) => {
         // Reset dynamic fields visibility
         hide(field1.group); hide(field2.group); hide(field3.group); hide(field4.group);
         if (field5 && field5.group) hide(field5.group);
@@ -641,7 +681,7 @@ export function initGlobalTradeModal() {
             show(formGroupStockType);
             if (formGroupMarketType) show(formGroupMarketType);
             show(formGroupFeeTax);
-            if (labelFeeTax) labelFeeTax.innerText = '手續費／證交稅';
+            if (labelFeeTax) labelFeeTax.innerText = '手續費/證交稅';
             const labelFeeTop = document.getElementById('label-trade-fee-top');
             if (labelFeeTop) labelFeeTop.innerText = '手續費';
             if (formGroupTotal) show(formGroupTotal);
@@ -671,12 +711,14 @@ export function initGlobalTradeModal() {
             const labelFeeTop = document.getElementById('label-trade-fee-top');
             if (labelFeeTop) labelFeeTop.innerText = '匯費';
             if (feeHint) feeHint.innerText = '通常為 10 元';
+            if (inputFee && !isInit) inputFee.value = '10';
 
             show(containerTax);
             labelTaxTop.innerText = '健保補充保費';
             inputTax.disabled = false;
             inputTax.classList.remove('bg-slate-50', 'text-slate-400');
             if (taxHint) taxHint.innerText = '單筆超兩萬會扣 2.11%';
+            if (formGroupTotal) show(formGroupTotal);
 
             show(field1.group);
             field1.label.innerText = '每股股息（可略過）';
@@ -694,6 +736,8 @@ export function initGlobalTradeModal() {
             // 配股通常沒有匯費，二代健保補充保費也會另外開單補繳，不直接從帳戶扣除，所以隱藏此欄位
             hide(formGroupFeeTax);
             hide(containerTax);
+            if (inputFee && !isInit) inputFee.value = '';
+            if (inputTax && !isInit) inputTax.value = '';
 
             show(field1.group);
             field1.label.innerText = '每股股利（可略過）';
@@ -714,6 +758,7 @@ export function initGlobalTradeModal() {
             const labelFeeTop = document.getElementById('label-trade-fee-top');
             if (labelFeeTop) labelFeeTop.innerText = '匯費';
             if (feeHint) feeHint.innerText = '通常為 10 元';
+            if (inputFee && !isInit) inputFee.value = '10';
 
             show(containerTax);
             labelTaxTop.innerText = '健保補充保費';
@@ -722,10 +767,9 @@ export function initGlobalTradeModal() {
             let threshold = settings.nhiThreshold !== undefined ? settings.nhiThreshold : 20000;
             let rate = settings.nhiTaxRate !== undefined ? settings.nhiTaxRate : 2.11;
             if (taxHint) taxHint.innerText = `單筆超${threshold}會扣 ${rate}%`;
+            if (formGroupTotal) show(formGroupTotal);
 
             show(field1.group);
-            field1.label.innerText = '每股股息（可略過）';
-            field1.input.placeholder = '例如 4';
             field1.label.innerText = '每股股息';
             field1.input.placeholder = '例如 4';
 
@@ -749,6 +793,9 @@ export function initGlobalTradeModal() {
             }
 
         } else if (currentTradeType === 'capital_reduction') {
+            if (inputFee && !isInit) inputFee.value = '';
+            if (inputTax && !isInit) inputTax.value = '';
+            
             show(field1.group);
             field1.label.innerText = '減資後剩餘比例';
             field1.input.placeholder = '例如 0.6';
@@ -766,6 +813,9 @@ export function initGlobalTradeModal() {
             field4.input.placeholder = '留白將自動計算';
 
         } else if (currentTradeType === 'capital_split') {
+            if (inputFee && !isInit) inputFee.value = '';
+            if (inputTax && !isInit) inputTax.value = '';
+            
             show(field1.group);
             field1.label.innerText = '每股分拆為';
             field1.input.placeholder = '例如 4';
@@ -779,6 +829,9 @@ export function initGlobalTradeModal() {
             field3.input.placeholder = '留白將自動計算';
 
         } else if (currentTradeType === 'account_deposit' || currentTradeType === 'account_withdraw') {
+            if (inputFee && !isInit) inputFee.value = '';
+            if (inputTax && !isInit) inputTax.value = '';
+            
             hide(formGroupCode);
             show(field1.group);
             field1.label.innerText = '金額（元）';
@@ -978,16 +1031,33 @@ export function initGlobalTradeModal() {
         } else if (currentTradeType === 'sell') {
             total = amount - userFee - userTax;
             if (qty > 0) formulaHtml = `${price} &times; ${qty.toLocaleString()} - ${userFee.toLocaleString()} - ${userTax.toLocaleString()} = ${total.toLocaleString()}`;
+        } else if (currentTradeType === 'dividend_cash' || currentTradeType === 'dividend_both') {
+            let cashAmt = parseFloat(field4.input.value);
+            if (isNaN(cashAmt) && field4.input.placeholder) {
+                let match = field4.input.placeholder.match(/自動計算:\s*(\d+)/);
+                cashAmt = match ? parseInt(match[1], 10) : 0;
+            } else if (isNaN(cashAmt)) {
+                cashAmt = 0;
+            }
+            
+            total = cashAmt - userFee - userTax;
+            if (cashAmt > 0) {
+                let parts = [];
+                parts.push(cashAmt.toLocaleString());
+                if (userFee > 0) parts.push(`- 匯${userFee.toLocaleString()}`);
+                if (userTax > 0) parts.push(`- 保${userTax.toLocaleString()}`);
+                formulaHtml = parts.join(' ') + ` = ${total.toLocaleString()}`;
+            }
         }
 
         if (labelTotalAmount) {
             let colorClass = 'text-blue-600';
-            if (total > 0) {
+            if (total !== 0) {
                 if (currentTradeType === 'buy') colorClass = 'text-red-600';
                 else colorClass = 'text-green-600';
             }
 
-            labelTotalAmount.innerText = amount > 0 ? total.toLocaleString() : '0';
+            labelTotalAmount.innerText = total !== 0 ? total.toLocaleString() : '0';
             labelTotalAmount.className = `text-3xl font-bold ${colorClass}`;
         }
 
@@ -1107,7 +1177,7 @@ export function initGlobalTradeModal() {
                 else if (tx.category === 'account') mappedType = tx.type === 'deposit' ? 'account_deposit' : 'account_withdraw';
                 else if (tx.category === 'fee_rebate') mappedType = 'fee_rebate';
 
-                setTradeType(mappedType);
+                setTradeType(mappedType, true);
                 setStockType(tx.stockType === 'etf' ? 'etf' : 'regular');
 
                 let isTxOddLot = tx.isOddLot;
@@ -1161,7 +1231,7 @@ export function initGlobalTradeModal() {
             inputDate.value = new Date().toISOString().split('T')[0];
             inputCode.value = defaultCode;
             inputNote.value = '';
-            setTradeType('buy');
+            setTradeType('buy', true);
             setStockType('regular');
             setMarketType('regular');
             setDayTrading(false);
@@ -1202,7 +1272,7 @@ export function initGlobalTradeModal() {
     const handleSave = (addAnother) => {
         const date = inputDate.value;
         const code = inputCode.value.trim().toUpperCase();
-        const note = inputNote.value.trim();
+        const note = inputNote.value.replace(/[\[［]自動計算[\]］].*$/s, '').trim();
 
         if (!date) { alert('請選擇交易日期'); return; }
         if (currentTradeType !== 'account_deposit' && currentTradeType !== 'account_withdraw' && currentTradeType !== 'fee_rebate') {
@@ -1448,7 +1518,7 @@ export function initTrades() {
     const btnFilterReset = document.getElementById('btn-trade-filter-reset');
 
     const filterInputs = [
-        'filter-date-start', 'filter-date-end', 'filter-code',
+        'filter-date-start', 'filter-date-end',
         'filter-type', 'filter-stock-type', 'filter-market-type', 'filter-broker'
     ];
 
@@ -1459,15 +1529,43 @@ export function initTrades() {
         }
     });
 
+    // Custom dropdown logic for filter-code
+    const filterCodeBtn = document.getElementById('filter-code-btn');
+    const filterCodeDropdown = document.getElementById('filter-code-dropdown');
+    
+    if (filterCodeBtn && filterCodeDropdown) {
+        filterCodeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            filterCodeDropdown.classList.toggle('hidden');
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!filterCodeBtn.contains(e.target) && !filterCodeDropdown.contains(e.target)) {
+                filterCodeDropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    if (filterBroker) {
+        filterBroker.addEventListener('change', () => {
+            updateFilterCodeOptions();
+            renderTrades();
+        });
+    }
+
+    // Initialize stock code options
+    updateFilterCodeOptions();
+
     if (btnFilterReset) {
         btnFilterReset.addEventListener('click', () => {
             document.getElementById('filter-date-start').value = '';
             document.getElementById('filter-date-end').value = '';
-            document.getElementById('filter-code').value = '';
+            window.selectedFilterCodes.clear();
             document.getElementById('filter-type').value = '';
             const filterStockType = document.getElementById('filter-stock-type');
             if (filterStockType) filterStockType.value = '';
             document.getElementById('filter-broker').value = '';
+            updateFilterCodeOptions();
             renderTrades();
         });
     }
@@ -1535,6 +1633,75 @@ export function initTrades() {
                 }
             }
         });
+    }
+}
+
+window.selectedFilterCodes = new Set();
+
+function updateFilterCodeOptions() {
+    const dropdown = document.getElementById('filter-code-dropdown');
+    const filterBrokerId = document.getElementById('filter-broker')?.value;
+    
+    if (!dropdown || !settings.transactions) return;
+    
+    // Get unique codes filtered by broker
+    let codes = new Set();
+    settings.transactions.forEach(t => {
+        if (!t.code) return;
+        if (filterBrokerId && String(t.brokerId) !== String(filterBrokerId)) return;
+        codes.add(t.code);
+    });
+    
+    // Convert to sorted array
+    const sortedCodes = Array.from(codes).sort();
+    
+    // Validate selectedFilterCodes
+    const validSelected = new Set();
+    window.selectedFilterCodes.forEach(c => {
+        if (sortedCodes.includes(c)) validSelected.add(c);
+    });
+    window.selectedFilterCodes = validSelected;
+    
+    // Rebuild options
+    dropdown.innerHTML = '';
+    
+    sortedCodes.forEach(code => {
+        const label = document.createElement('label');
+        label.className = 'flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded cursor-pointer';
+        let stockName = window._GLOBAL_STOCK_NAMES?.[code] || '';
+        const isChecked = window.selectedFilterCodes.has(code) ? 'checked' : '';
+        label.innerHTML = `
+            <input type="checkbox" value="${code}" ${isChecked} class="trade-code-filter-cb rounded border-slate-300 text-blue-600 focus:ring-blue-500 shrink-0">
+            <span class="truncate">${code} ${stockName}</span>
+        `;
+        dropdown.appendChild(label);
+    });
+    
+    // Listen to changes
+    dropdown.querySelectorAll('.trade-code-filter-cb').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+            if (e.target.checked) window.selectedFilterCodes.add(e.target.value);
+            else window.selectedFilterCodes.delete(e.target.value);
+            updateFilterCodeBtnText();
+            renderTrades();
+        });
+    });
+    
+    updateFilterCodeBtnText();
+}
+
+function updateFilterCodeBtnText() {
+    const textEl = document.getElementById('filter-code-text');
+    if (!textEl) return;
+    
+    if (window.selectedFilterCodes.size === 0) {
+        textEl.innerText = '全部';
+    } else if (window.selectedFilterCodes.size === 1) {
+        const code = Array.from(window.selectedFilterCodes)[0];
+        let stockName = window._GLOBAL_STOCK_NAMES?.[code] || '';
+        textEl.innerText = stockName ? `${code} ${stockName}` : code;
+    } else {
+        textEl.innerText = `已選 ${window.selectedFilterCodes.size} 檔`;
     }
 }
 
@@ -2157,7 +2324,6 @@ export function renderTrades() {
     // Get filter values
     const filterDateStart = document.getElementById('filter-date-start')?.value;
     const filterDateEnd = document.getElementById('filter-date-end')?.value;
-    const filterCode = document.getElementById('filter-code')?.value.trim();
     const filterType = document.getElementById('filter-type')?.value;
     const filterStockType = document.getElementById('filter-stock-type')?.value;
     const filterMarketType = document.getElementById('filter-market-type')?.value;
@@ -2171,8 +2337,8 @@ export function renderTrades() {
     if (filterDateEnd) {
         filteredTrades = filteredTrades.filter(t => t.date <= filterDateEnd.replace(/-/g, '/'));
     }
-    if (filterCode) {
-        filteredTrades = filteredTrades.filter(t => t.code && t.code.includes(filterCode));
+    if (window.selectedFilterCodes && window.selectedFilterCodes.size > 0) {
+        filteredTrades = filteredTrades.filter(t => t.code && window.selectedFilterCodes.has(t.code));
     }
     if (filterType) {
         filteredTrades = filteredTrades.filter(t => {
@@ -2391,7 +2557,7 @@ export function renderTrades() {
                                 <span class="font-medium">${displayQty}</span>
                             </div>` : ''}
                             <div class="flex justify-between items-center">
-                                <span class="text-slate-400 text-[10px]">${typ === 'both' ? '配息／配股(元)' : '每股配息'}</span>
+                                <span class="text-slate-400 text-[10px]">${typ === 'both' ? '配息/配股(元)' : '每股配息'}</span>
                                 <span class="text-slate-500">${displayPrice}</span>
                             </div>
                         </div>
@@ -2417,11 +2583,11 @@ export function renderTrades() {
                     <div class="bg-white/40 rounded border border-white/50 p-1.5 px-2 text-[13px] text-slate-700 flex flex-wrap gap-x-3 gap-y-0.5 leading-tight">
                         <div class="flex-[3] min-w-[150px]">
                             <div class="flex justify-between items-center mb-1.5">
-                                <span class="text-slate-400 text-[10px]">數量／比例／配股</span>
+                                <span class="text-slate-400 text-[10px]">數量/比例/配股</span>
                                 <span class="font-medium">${displayQty}</span>
                             </div>
                             <div class="flex justify-between items-center">
-                                <span class="text-slate-400 text-[10px]">單價／退現／配息配股</span>
+                                <span class="text-slate-400 text-[10px]">單價/退現/配息配股</span>
                                 <span class="text-slate-500">${displayPrice}</span>
                             </div>
                         </div>
@@ -2431,7 +2597,7 @@ export function renderTrades() {
                                 <span class="font-medium">${displayFee}</span>
                             </div>
                             <div class="flex justify-between items-start">
-                                <span class="text-slate-400 text-[10px] pt-0.5">證交稅／健保</span>
+                                <span class="text-slate-400 text-[10px] pt-0.5">證交稅/健保</span>
                                 <div class="text-right">
                                     <span class="text-slate-500 block">${displayTax}</span>
                                     ${displayNhi}
@@ -2450,7 +2616,19 @@ export function renderTrades() {
             </td>
             <td class="hidden md:table-cell px-2 py-3 text-center text-slate-400 font-mono text-sm align-middle">${sortedTrades.length - index}</td>
             <td class="hidden md:table-cell px-4 py-2 align-middle">
-                <div class="text-slate-700">${t.date}</div>
+                <div class="relative inline-flex items-center">
+                    <div class="text-slate-700">${t.date}</div>
+                    <div class="absolute left-full ml-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-50/80 md:bg-transparent px-1 rounded">
+                        <button class="text-blue-500 hover:text-blue-700 transition-colors flex items-center gap-0.5" onclick="if(window.openTradeModal) window.openTradeModal('${t.code || ''}', '${t.id}')" title="編輯">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                            <span class="text-xs">編輯</span>
+                        </button>
+                        <button class="text-slate-400 hover:text-red-500 transition-colors flex items-center gap-0.5" onclick="window.tradesTab.deleteTrade('${t.id}')" title="刪除">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            <span class="text-xs">刪除</span>
+                        </button>
+                    </div>
+                </div>
                 <div class="text-slate-700 mt-1">${displayCodeName}</div>
             </td>
             <td class="hidden md:table-cell px-4 py-2 align-middle">
@@ -2468,13 +2646,8 @@ export function renderTrades() {
             </td>
             <td class="hidden md:table-cell px-4 py-2 text-right align-middle">
                 <div class="${amountColor}">${(t.total || 0).toLocaleString()}</div>
-                <div class="mt-1 flex justify-end gap-4">
-                    <button class="text-blue-500 hover:text-blue-700 transition-colors opacity-0 group-hover:opacity-100" onclick="if(window.openTradeModal) window.openTradeModal('${t.code || ''}', '${t.id}')" title="編輯">
-                        <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                    </button>
-                    <button class="text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100" onclick="window.tradesTab.deleteTrade('${t.id}')" title="刪除">
-                        <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    </button>
+                <div class="mt-1 text-xs text-right whitespace-normal break-words max-w-[250px] ml-auto">
+                    ${t.note ? `<span class="text-slate-500 italic">${t.note}</span>` : '<span class="text-slate-300">-</span>'}
                 </div>
             </td>
         `;
@@ -2484,21 +2657,46 @@ export function renderTrades() {
     updateSelectionUI();
     updateSortIcons();
 
-    // 渲染持股摘要 (若有指定特定股票)
+    // 渲染持股摘要 (若有指定唯一一檔特定股票)
     const summaryContainer = document.getElementById('trade-summary-container');
     if (summaryContainer) {
-        if (filterCode && filteredTrades.length > 0) {
+        const isSingleStock = window.selectedFilterCodes && window.selectedFilterCodes.size === 1;
+        const filterCodeForSummary = isSingleStock ? Array.from(window.selectedFilterCodes)[0] : null;
+
+        if (filterCodeForSummary && filteredTrades.length > 0) {
             summaryContainer.classList.remove('hidden');
             document.getElementById('summary-cost').innerText = '計算中...';
 
             // 抓取報價與計算
-            getQuoteForCode(filterCode).then(quote => {
-                const price = quote && quote.price ? quote.price : 0;
-                const metrics = calculateStockMetrics(filterCode, price);
+            getQuoteForCode(filterCodeForSummary).catch(err => {
+                console.error('[交易] 取得總結報價失敗（renderTrades）:', err);
+                return null;
+            }).then(async quote => {
+                let price = quote && quote.price ? quote.price : 0;
+                let usedLocalCache = false;
+
+                if (price === 0 || quote?.status === 'error') {
+                    // 嘗試從本地快取抓取價格
+                    const cachedData = await loadStockDataFromCache(filterCodeForSummary);
+                    if (cachedData && cachedData.quote && cachedData.quote.price) {
+                        price = cachedData.quote.price;
+                        usedLocalCache = true;
+                    }
+                }
+
+                const metrics = calculateStockMetrics(filterCodeForSummary, price);
 
                 document.getElementById('summary-cost').innerText = Math.round(metrics.totalCost).toLocaleString();
                 document.getElementById('summary-breakeven').innerText = metrics.breakEvenPrice > 0 ? metrics.breakEvenPrice.toFixed(2) : '0.00';
-                document.getElementById('summary-market-value').innerText = Math.round(metrics.marketValue).toLocaleString();
+                
+                let mvHtml = Math.round(metrics.marketValue).toLocaleString();
+                if (usedLocalCache) {
+                    mvHtml += ` <span class="text-[10px] text-slate-400 font-normal ml-1" title="使用本地快取報價計算">(*本地快取)</span>`;
+                } else if (price === 0) {
+                    mvHtml += ` <span class="text-[10px] text-slate-400 font-normal ml-1" title="無報價資料">(*無報價)</span>`;
+                }
+                document.getElementById('summary-market-value').innerHTML = mvHtml;
+
                 document.getElementById('summary-shares').innerText = metrics.shares.toLocaleString();
                 document.getElementById('summary-avg-price').innerText = metrics.avgPrice > 0 ? metrics.avgPrice.toFixed(2) : '0.00';
 
@@ -2510,8 +2708,6 @@ export function renderTrades() {
                 } else {
                     unrealizedEl.innerHTML = `未實現 0`;
                 }
-            }).catch(err => {
-                console.error('[交易] 取得總結報價失敗（renderTrades）:', err);
             });
         } else {
             summaryContainer.classList.add('hidden');

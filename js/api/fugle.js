@@ -64,14 +64,20 @@ export async function fetchQuoteFromFugle(code) {
 /**
  * 從富果 Fugle API 取得歷史 K 線
  */
-export async function fetchHistoricalKLineFromFugle(code) {
+export async function fetchHistoricalKLineFromFugle(code, period1 = null, period2 = null) {
     const token = settings.fugleToken;
     if (!token) return null;
     
     const symbol = code.split('.')[0];
 
     try {
-        const url = `https://api.fugle.tw/marketdata/v1.0/stock/historical/candles/${symbol}?timeframe=D`;
+        let url = `https://api.fugle.tw/marketdata/v1.0/stock/historical/candles/${symbol}?timeframe=D`;
+        
+        if (period1 && period2) {
+            const fromDate = new Date(period1 * 1000).toISOString().split('T')[0];
+            const toDate = new Date(period2 * 1000).toISOString().split('T')[0];
+            url += `&from=${fromDate}&to=${toDate}`;
+        }
         const res = await fetch(url, {
             headers: {
                 'X-API-KEY': token
